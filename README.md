@@ -52,11 +52,6 @@ for zone in model.thermal_zones:
 model.save("building.osm", overwrite=True)
 ```
 
-## Examples
-
-See `examples/` for more detailed usage:
-- `basic_scripting.py` - Creating and manipulating models
-
 ## Design Philosophy
 
 Osmosis wraps OpenStudio SDK objects with a thin Pythonic layer:
