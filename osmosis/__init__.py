@@ -2,6 +2,8 @@
 Osmosis - Pythonic wrappers for OpenStudio SDK
 """
 
+import warnings
+
 from .model import Model
 from .base import OsmObject
 from .registry import wrap, wrap_collection, register_custom_wrapper
@@ -10,6 +12,10 @@ from .registry import wrap, wrap_collection, register_custom_wrapper
 from .space import Space
 from .space_type import SpaceType
 from .thermal_zone import ThermalZone
+from .additional_properties import AdditionalProperties
+
+# Suppress SWIG memory leak warnings
+warnings.filterwarnings("ignore", message="swig/python detected a memory leak")
 
 __version__ = "0.1.0"
 
@@ -19,6 +25,7 @@ __all__ = [
     "Space",
     "SpaceType",
     "ThermalZone",
+    "AdditionalProperties",
     "wrap",
     "wrap_collection",
     "register_custom_wrapper",

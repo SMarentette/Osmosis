@@ -31,6 +31,20 @@ class Model(OsmObject):
         """Save model to an OSM file."""
         return self._os_obj.save(openstudio.toPath(path), overwrite)
 
+    def save_as(self, path: str):
+        """Save model to an OSM file without overwriting existing files.
+
+        Args:
+            path: Path to save the OSM file to
+
+        Raises:
+            RuntimeError: If the file already exists
+        """
+        import os
+        if os.path.exists(path):
+            raise RuntimeError(f"File already exists: {path}")
+        return self.save(path, overwrite=False)
+
     def add_space(self, name: str | None = None) -> Space:
         """Create a new Space in the model."""
         space = Space(openstudio.model.Space(self._os_obj))

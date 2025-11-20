@@ -30,13 +30,20 @@ class OsmObject:
         """Return the underlying SWIG object"""
         return self._os_obj
 
+    @property
+    def additional_properties(self):
+        """Access additional properties for custom key-value storage"""
+        from .registry import wrap
+        return wrap(self._os_obj.additionalProperties())
+
     def __getattr__(self, name: str):
         """
         Map attribute access to SDK getter methods.
 
-        Tries two patterns:
+        Tries three patterns:
         1. Camel case getter: space.X => space._os_obj.getX()
         2. Direct method: space.X => space._os_obj.X()
+        3. Snake case to camelCase: space.x_y => space.xY
         """
         if name.startswith("_"):
             raise AttributeError(f"'{type(self).__name__}' "
@@ -53,6 +60,12 @@ class OsmObject:
             result = getattr(self._os_obj, name)()
             return self._unwrap(result)
 
+        # Try snake_case to camelCase: x_y -> xY
+        camel_name = self._snake_to_camel(name)
+        if hasattr(self._os_obj, camel_name):
+            result = getattr(self._os_obj, camel_name)()
+            return self._unwrap(result)
+
         raise AttributeError(f"'{type(self).__name__}' "
                              f"has no attribute '{name}'")
 
@@ -61,13 +74,19 @@ class OsmObject:
         Map attribute setting to SDK setter methods
 
         Maps: space.X = value -> space._os_obj.setX(value)
+        Also supports: space.x_y = value -> space._os_obj.setXY(value)
         """
         if name.startswith("_"):
             object.__setattr__(self, name, value)
             return
 
+        # If name contains "_", convert snake_case to camelCase
+        if "_" in name:
+            name = self._snake_to_camel(name)
+
         # Try camelCase setter: setX(value) , where X = attribute name
         setter_name = f"set{name[0].upper()}{name[1:]}"
+
         if hasattr(self._os_obj, setter_name):
             getattr(self._os_obj, setter_name)(value)
             return
@@ -93,6 +112,17 @@ class OsmObject:
             except Exception:
                 return result
         return result
+
+    @staticmethod
+    def _snake_to_camel(snake_str: str) -> str:
+        """
+        Convert snake_case to camelCase.
+
+        Examples:
+            some_value => someValue
+        """
+        parts = snake_str.split('_')
+        return parts[0] + ''.join(word.capitalize() for word in parts[1:])
 
     def __repr__(self) -> str:
         """

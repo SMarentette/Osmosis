@@ -52,6 +52,12 @@ for zone in model.thermal_zones:
 model.save("building.osm", overwrite=True)
 ```
 
+## Additional Properties
+
+Osmosis provides support for OpenStudio's `AdditionalProperties` feature, allowing you to attach custom metadata to any model object.
+
+See [docs/ADDITIONAL_PROPERTIES_README.md](docs/ADDITIONAL_PROPERTIES_README.md) for examples
+
 ## Design Philosophy
 
 Osmosis wraps OpenStudio SDK objects with a thin Pythonic layer:
