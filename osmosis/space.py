@@ -2,6 +2,7 @@
 from .base import OsmObject
 from .space_type import SpaceType
 from .thermal_zone import ThermalZone
+from .building_story import BuildingStory
 from .registry import register_custom_wrapper, wrap
 
 
@@ -31,6 +32,18 @@ class Space(OsmObject):
         raw_thermal_zone = self._os_obj.thermalZone()
         if raw_thermal_zone.is_initialized():
             return wrap(raw_thermal_zone.get())  # type: ignore
+        return None
+
+    @property
+    def building_story(self) -> BuildingStory | None:
+        """Get the building story for this space.
+
+        Returns:
+            BuildingStory or None
+        """
+        raw_building_story = self._os_obj.buildingStory()
+        if raw_building_story.is_initialized():
+            return wrap(raw_building_story.get())  # type: ignore
         return None
 
     @property
@@ -66,6 +79,18 @@ class Space(OsmObject):
             thermal_zone: A ThermalZone object
         """
         self._os_obj.setThermalZone(thermal_zone._os_obj)
+
+    def polygon_2d(self) -> list[tuple[float, float]]:
+        """Get the 2D polygon representation of the space.
+
+        Returns:
+            A list of (x, y) tuples representing the polygon vertices.
+        """
+        raw_polygon = self._os_obj.floorPrint()
+        points = []
+        for point in raw_polygon:
+            points.append((point.x(), point.y()))
+        return points
 
     def _repr_html_(self) -> str:
         """Rich Jupyter display showing space details."""

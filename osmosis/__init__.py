@@ -12,6 +12,7 @@ from .registry import wrap, wrap_collection, register_custom_wrapper
 from .space import Space
 from .space_type import SpaceType
 from .thermal_zone import ThermalZone
+from .building_story import BuildingStory
 from .additional_properties import AdditionalProperties
 
 # Suppress SWIG memory leak warnings
@@ -25,6 +26,7 @@ __all__ = [
     "Space",
     "SpaceType",
     "ThermalZone",
+    "BuildingStory",
     "AdditionalProperties",
     "wrap",
     "wrap_collection",

@@ -15,6 +15,7 @@ class OsmObject:
     - Jupyter notebook HTML display support
     """
     __slots__ = ("_os_obj",)
+    _attr_cache: dict[tuple[type, str], str] = {}
 
     def __init__(self, os_obj: Any):
         """
@@ -43,26 +44,38 @@ class OsmObject:
         Tries three patterns:
         1. Camel case getter: space.X => space._os_obj.getX()
         2. Direct method: space.X => space._os_obj.X()
-        3. Snake case to camelCase: space.x_y => space.xY
+        3. Snake case to camelCase: space.x_y => space._os_obj.getXY()
+
+        Results are cached to avoid repeated lookups.
         """
         if name.startswith("_"):
             raise AttributeError(f"'{type(self).__name__}' "
                                  f"has no attribute '{name}'")
 
+        # Check cache first
+        cache_key = (type(self._os_obj), name)
+        if cache_key in OsmObject._attr_cache:
+            cached_method = OsmObject._attr_cache[cache_key]
+            result = getattr(self._os_obj, cached_method)()
+            return self._unwrap(result)
+
         # Try camelCase getter: getX(), where X = attribute name
         getter_name = f"get{name[0].upper()}{name[1:]}"
         if hasattr(self._os_obj, getter_name):
+            OsmObject._attr_cache[cache_key] = getter_name
             result = getattr(self._os_obj, getter_name)()
             return self._unwrap(result)
 
         # Try direct method name
         if hasattr(self._os_obj, name):
+            OsmObject._attr_cache[cache_key] = name
             result = getattr(self._os_obj, name)()
             return self._unwrap(result)
 
         # Try snake_case to camelCase: x_y -> xY
         camel_name = self._snake_to_camel(name)
         if hasattr(self._os_obj, camel_name):
+            OsmObject._attr_cache[cache_key] = camel_name
             result = getattr(self._os_obj, camel_name)()
             return self._unwrap(result)
 
