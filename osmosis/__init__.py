@@ -14,6 +14,7 @@ from .space_type import SpaceType
 from .thermal_zone import ThermalZone
 from .building_story import BuildingStory
 from .additional_properties import AdditionalProperties
+from .default_schedule_set import DefaultScheduleSet
 
 # Suppress SWIG memory leak warnings
 warnings.filterwarnings("ignore", message="swig/python detected a memory leak")
@@ -28,6 +29,7 @@ __all__ = [
     "ThermalZone",
     "BuildingStory",
     "AdditionalProperties",
+    "DefaultScheduleSet",
     "wrap",
     "wrap_collection",
     "register_custom_wrapper",

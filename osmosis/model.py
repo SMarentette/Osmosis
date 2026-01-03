@@ -10,6 +10,7 @@ from .registry import COLLECTION_ATTRIBUTE_MAP, get_wrapper_class
 from .space import Space
 from .space_type import SpaceType
 from .thermal_zone import ThermalZone
+from .default_schedule_set import DefaultScheduleSet
 
 
 class Model(OsmObject):
@@ -88,6 +89,15 @@ class Model(OsmObject):
         if name:
             zone.name = name
         return zone
+
+    def schedule_sets(self) -> list[DefaultScheduleSet]:
+        """Get all DefaultScheduleSets in the model.
+
+        Returns:
+            list[DefaultScheduleSet]: All schedule sets in the model
+        """
+        raw_sets = self._os_obj.getDefaultScheduleSets()
+        return [DefaultScheduleSet(item) for item in raw_sets]
 
     def __getattr__(self, name: str) -> Any:
         """
