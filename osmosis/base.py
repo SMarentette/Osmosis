@@ -32,6 +32,38 @@ class OsmObject:
         return self._os_obj
 
     @property
+    def name(self) -> str | None:
+        """Typed access to an object's name when the SDK object exposes one."""
+        if not hasattr(self._os_obj, "name"):
+            return None
+
+        result = self._unwrap(self._os_obj.name())
+        if result is None:
+            return None
+
+        value = str(result).strip()
+        return value or None
+
+    @name.setter
+    def name(self, value: str) -> None:
+        if not hasattr(self._os_obj, "setName"):
+            raise AttributeError(f"Cannot set 'name' on '{type(self).__name__}'")
+
+        self._os_obj.setName(value)
+
+    @property
+    def handle(self) -> str | None:
+        """Typed access to an object's OpenStudio handle."""
+        if not hasattr(self._os_obj, "handle"):
+            return None
+
+        value = str(self._os_obj.handle()).strip()
+        if not value:
+            return None
+
+        return value.strip("{}").lower() or None
+
+    @property
     def additional_properties(self):
         """Access additional properties for custom key-value storage"""
         from .registry import wrap
@@ -66,6 +98,14 @@ class OsmObject:
             result = getattr(self._os_obj, getter_name)()
             return self._unwrap(result)
 
+        # Try snake_case to getCamelCase: x_y -> getXY
+        camel_name = self._snake_to_camel(name)
+        getter_camel_name = f"get{camel_name[0].upper()}{camel_name[1:]}"
+        if hasattr(self._os_obj, getter_camel_name):
+            OsmObject._attr_cache[cache_key] = getter_camel_name
+            result = getattr(self._os_obj, getter_camel_name)()
+            return self._unwrap(result)
+
         # Try direct method name
         if hasattr(self._os_obj, name):
             OsmObject._attr_cache[cache_key] = name
@@ -73,7 +113,6 @@ class OsmObject:
             return self._unwrap(result)
 
         # Try snake_case to camelCase: x_y -> xY
-        camel_name = self._snake_to_camel(name)
         if hasattr(self._os_obj, camel_name):
             OsmObject._attr_cache[cache_key] = camel_name
             result = getattr(self._os_obj, camel_name)()
@@ -92,6 +131,9 @@ class OsmObject:
         if name.startswith("_"):
             object.__setattr__(self, name, value)
             return
+
+        if isinstance(value, OsmObject):
+            value = value.raw
 
         # If name contains "_", convert snake_case to camelCase
         if "_" in name:
@@ -120,10 +162,24 @@ class OsmObject:
         if hasattr(result, "is_initialized"):
             try:
                 if result.is_initialized():
-                    return result.get()
-                return None
+                    result = result.get()
+                else:
+                    return None
             except Exception:
                 return result
+        return OsmObject._wrap_sdk_result(result)
+
+    @staticmethod
+    def _wrap_sdk_result(result):
+        """Wrap OpenStudio SDK objects while leaving Python scalars intact."""
+        if isinstance(result, OsmObject):
+            return result
+
+        module_name = getattr(type(result), "__module__", "")
+        if module_name.startswith("openstudio."):
+            from .registry import wrap
+            return wrap(result)
+
         return result
 
     @staticmethod

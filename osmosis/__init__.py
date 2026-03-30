@@ -15,6 +15,17 @@ from .thermal_zone import ThermalZone
 from .building_story import BuildingStory
 from .additional_properties import AdditionalProperties
 from .default_schedule_set import DefaultScheduleSet
+from .schedule_type_limits import ScheduleTypeLimits
+from .schedule_day import ScheduleDay
+from .schedule_rule import ScheduleRule
+from .schedule_ruleset import ScheduleRuleset
+from .schedule_constant import ScheduleConstant
+from .people_definition import PeopleDefinition
+from .lights_definition import LightsDefinition
+from .electric_equipment_definition import ElectricEquipmentDefinition
+from .people import People
+from .lights import Lights
+from .electric_equipment import ElectricEquipment
 
 # Suppress SWIG memory leak warnings
 warnings.filterwarnings("ignore", message="swig/python detected a memory leak")
@@ -30,6 +41,17 @@ __all__ = [
     "BuildingStory",
     "AdditionalProperties",
     "DefaultScheduleSet",
+    "ScheduleTypeLimits",
+    "ScheduleDay",
+    "ScheduleRule",
+    "ScheduleRuleset",
+    "ScheduleConstant",
+    "PeopleDefinition",
+    "LightsDefinition",
+    "ElectricEquipmentDefinition",
+    "People",
+    "Lights",
+    "ElectricEquipment",
     "wrap",
     "wrap_collection",
     "register_custom_wrapper",

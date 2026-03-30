@@ -11,6 +11,15 @@ from .space import Space
 from .space_type import SpaceType
 from .thermal_zone import ThermalZone
 from .default_schedule_set import DefaultScheduleSet
+from .schedule_type_limits import ScheduleTypeLimits
+from .schedule_ruleset import ScheduleRuleset
+from .schedule_constant import ScheduleConstant
+from .people_definition import PeopleDefinition
+from .lights_definition import LightsDefinition
+from .electric_equipment_definition import ElectricEquipmentDefinition
+from .people import People
+from .lights import Lights
+from .electric_equipment import ElectricEquipment
 
 
 class Model(OsmObject):
@@ -23,7 +32,7 @@ class Model(OsmObject):
     def load(cls, path: str) -> "Model":
         """Load model from an OSM file"""
         translator = openstudio.osversion.VersionTranslator()
-        os_model = translator.loadModel(path)
+        os_model = translator.loadModel(openstudio.toPath(path))
         if os_model.is_initialized():
             return cls(os_model.get())
         raise ValueError(f"Could not load model from {path}")
@@ -90,7 +99,114 @@ class Model(OsmObject):
             zone.name = name
         return zone
 
-    def schedule_sets(self) -> list[DefaultScheduleSet]:
+    def add_schedule_type_limits(
+        self,
+        name: str | None = None,
+    ) -> ScheduleTypeLimits:
+        limits = ScheduleTypeLimits(
+            openstudio.model.ScheduleTypeLimits(self._os_obj)
+        )
+        if name:
+            limits.name = name
+        return limits
+
+    def add_schedule_ruleset(
+        self,
+        name: str | None = None,
+    ) -> ScheduleRuleset:
+        schedule = ScheduleRuleset(openstudio.model.ScheduleRuleset(self._os_obj))
+        if name:
+            schedule.name = name
+        return schedule
+
+    def add_schedule_constant(
+        self,
+        name: str | None = None,
+    ) -> ScheduleConstant:
+        schedule = ScheduleConstant(
+            openstudio.model.ScheduleConstant(self._os_obj)
+        )
+        if name:
+            schedule.name = name
+        return schedule
+
+    def add_default_schedule_set(
+        self,
+        name: str | None = None,
+    ) -> DefaultScheduleSet:
+        schedule_set = DefaultScheduleSet(
+            openstudio.model.DefaultScheduleSet(self._os_obj)
+        )
+        if name:
+            schedule_set.name = name
+        return schedule_set
+
+    def add_people_definition(
+        self,
+        name: str | None = None,
+    ) -> PeopleDefinition:
+        definition = PeopleDefinition(
+            openstudio.model.PeopleDefinition(self._os_obj)
+        )
+        if name:
+            definition.name = name
+        return definition
+
+    def add_lights_definition(
+        self,
+        name: str | None = None,
+    ) -> LightsDefinition:
+        definition = LightsDefinition(
+            openstudio.model.LightsDefinition(self._os_obj)
+        )
+        if name:
+            definition.name = name
+        return definition
+
+    def add_electric_equipment_definition(
+        self,
+        name: str | None = None,
+    ) -> ElectricEquipmentDefinition:
+        definition = ElectricEquipmentDefinition(
+            openstudio.model.ElectricEquipmentDefinition(self._os_obj)
+        )
+        if name:
+            definition.name = name
+        return definition
+
+    def add_people(
+        self,
+        definition: PeopleDefinition,
+        name: str | None = None,
+    ) -> People:
+        people = People(openstudio.model.People(definition.raw))
+        if name:
+            people.name = name
+        return people
+
+    def add_lights(
+        self,
+        definition: LightsDefinition,
+        name: str | None = None,
+    ) -> Lights:
+        lights = Lights(openstudio.model.Lights(definition.raw))
+        if name:
+            lights.name = name
+        return lights
+
+    def add_electric_equipment(
+        self,
+        definition: ElectricEquipmentDefinition,
+        name: str | None = None,
+    ) -> ElectricEquipment:
+        equipment = ElectricEquipment(
+            openstudio.model.ElectricEquipment(definition.raw)
+        )
+        if name:
+            equipment.name = name
+        return equipment
+
+    def schedule_sets(self, number) -> list[DefaultScheduleSet]:
         """Get all DefaultScheduleSets in the model.
 
         Returns:

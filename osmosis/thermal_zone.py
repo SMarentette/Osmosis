@@ -11,11 +11,6 @@ class ThermalZone(OsmObject):
         """Get all spaces in this zone"""
         return wrap_collection(self._os_obj.spaces())
 
-    @property
-    def floor_area(self):
-        """Total floor area of all spaces in zone"""
-        return self._os_obj.floorArea()
-
     def add_space(self, space):
         """Add a space to this zone"""
         space.set_thermal_zone(self)

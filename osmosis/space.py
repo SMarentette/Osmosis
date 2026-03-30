@@ -72,6 +72,10 @@ class Space(OsmObject):
         """
         self._os_obj.setSpaceType(space_type._os_obj)
 
+    def reset_space_type(self) -> None:
+        """Clear the assigned space type."""
+        self._os_obj.resetSpaceType()
+
     def set_thermal_zone(self, thermal_zone: "ThermalZone") -> None:
         """Set the thermal zone for this space.
 
@@ -79,6 +83,10 @@ class Space(OsmObject):
             thermal_zone: A ThermalZone object
         """
         self._os_obj.setThermalZone(thermal_zone._os_obj)
+
+    def reset_thermal_zone(self) -> None:
+        """Clear the assigned thermal zone."""
+        self._os_obj.resetThermalZone()
 
     def polygon_2d(self) -> list[tuple[float, float]]:
         """Get the 2D polygon representation of the space.

@@ -20,10 +20,12 @@ OSM_OBJECTS = [
     "DefaultSurfaceConstructions", "DefaultSubSurfaceConstructions",
     "AirGap", "SimpleGlazing",
     # schedules
-    "ScheduleRuleset", "ScheduleDay", "ScheduleConstant", "ScheduleCompact",
-    "ScheduleTypeLimits", "DefaultScheduleSet",
+    "ScheduleRuleset", "ScheduleRule", "ScheduleDay", "ScheduleConstant",
+    "ScheduleCompact", "ScheduleTypeLimits", "DefaultScheduleSet",
     # space/zone loads
-    "People", "Lights", "ElectricEquipment", "GasEquipment", "OtherEquipment",
+    "People", "PeopleDefinition", "Lights", "LightsDefinition",
+    "ElectricEquipment", "ElectricEquipmentDefinition",
+    "GasEquipment", "OtherEquipment",
     "HotWaterEquipment", "SpaceInfiltrationDesignFlowRate", "InternalMass",
     "DesignSpecificationOutdoorAir", "DesignSpecificationZoneAirDistribution",
     # air loops

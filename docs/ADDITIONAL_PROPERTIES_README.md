@@ -1,6 +1,8 @@
 # AdditionalProperties
 
-The `AdditionalProperties` class provides Pythonic access to OpenStudio's custom key-value storage system, allowing you to attach arbitrary metadata and properties to any model object.
+The `AdditionalProperties` class provides Pythonic access to OpenStudio's
+custom key-value storage system, allowing you to attach arbitrary metadata
+and properties to any model object.
 
 
 ## Quick Start
@@ -31,7 +33,8 @@ print(f"Is Occupied: {props.is_occupied}")
 
 ### Automatic Type Detection
 
-The class automatically determines the appropriate OpenStudio data type based on Python types:
+The class automatically determines the appropriate OpenStudio data type based
+on Python types:
 
 - `str` → String feature
 - `float` → Double feature
@@ -95,7 +98,8 @@ for key, value in equipment_props.items():
 
 ### Type-specific Access
 
-While the automatic type detection usually works, you can also access the underlying OpenStudio methods directly:
+While the automatic type detection usually works, you can also access the
+underlying OpenStudio methods directly:
 
 ```python
 # Direct access to OpenStudio methods (less common)
