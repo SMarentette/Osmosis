@@ -26,7 +26,7 @@ def test_space_type_load():
 
     # Set the space type on a space
     space = model.spaces[0]
-    space.set_space_type(model_space_type)
+    space.space_type = model_space_type
 
     # Verify the space type was set correctly
     assert space.space_type is not None

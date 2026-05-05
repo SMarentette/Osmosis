@@ -17,23 +17,11 @@ class SpaceType(OsmObject):
             return wrap(raw_schedule_set.get())  # type: ignore
         return None
 
-    def set_default_schedule_set(
-        self,
-        default_schedule_set: DefaultScheduleSet,
-    ) -> None:
-        self._os_obj.setDefaultScheduleSet(default_schedule_set.raw)
-
     def reset_default_schedule_set(self) -> None:
         self._os_obj.resetDefaultScheduleSet()
 
-    def set_standards_template(self, value: str) -> None:
-        self._os_obj.setStandardsTemplate(value)
-
     def reset_standards_template(self) -> None:
         self._os_obj.resetStandardsTemplate()
-
-    def set_standards_space_type(self, value: str) -> None:
-        self._os_obj.setStandardsSpaceType(value)
 
     def reset_standards_space_type(self) -> None:
         self._os_obj.resetStandardsSpaceType()

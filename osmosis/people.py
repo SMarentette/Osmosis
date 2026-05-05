@@ -22,5 +22,4 @@ class People(OsmObject):
             return wrap(raw_space_type.get())  # type: ignore
         return None
 
-    def set_space_type(self, space_type: SpaceType) -> None:
-        self._os_obj.setSpaceType(space_type.raw)
+

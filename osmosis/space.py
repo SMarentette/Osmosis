@@ -16,7 +16,6 @@ class Space(OsmObject):
         Returns:
             SpaceType or None
         """
-        from .registry import wrap
         raw_space_type = self._os_obj.spaceType()
         if raw_space_type.is_initialized():
             return wrap(raw_space_type.get())  # type: ignore
@@ -64,25 +63,9 @@ class Space(OsmObject):
         """
         return self._os_obj.floorArea()
 
-    def set_space_type(self, space_type: "SpaceType") -> None:
-        """Set the space type for this space.
-
-        Args:
-            space_type: A SpaceType object
-        """
-        self._os_obj.setSpaceType(space_type._os_obj)
-
     def reset_space_type(self) -> None:
         """Clear the assigned space type."""
         self._os_obj.resetSpaceType()
-
-    def set_thermal_zone(self, thermal_zone: "ThermalZone") -> None:
-        """Set the thermal zone for this space.
-
-        Args:
-            thermal_zone: A ThermalZone object
-        """
-        self._os_obj.setThermalZone(thermal_zone._os_obj)
 
     def reset_thermal_zone(self) -> None:
         """Clear the assigned thermal zone."""

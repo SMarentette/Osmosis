@@ -22,8 +22,4 @@ class Lights(OsmObject):
             return wrap(raw_space_type.get())  # type: ignore[return-value]
         return None
 
-    def set_space_type(self, space_type: SpaceType) -> None:
-        self._os_obj.setSpaceType(space_type.raw)
 
-    def set_end_use_subcategory(self, value: str) -> None:
-        self._os_obj.setEndUseSubcategory(value)

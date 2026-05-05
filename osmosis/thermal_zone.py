@@ -13,4 +13,4 @@ class ThermalZone(OsmObject):
 
     def add_space(self, space):
         """Add a space to this zone"""
-        space.set_thermal_zone(self)
+        space.thermal_zone = self
