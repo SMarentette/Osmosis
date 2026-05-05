@@ -119,6 +119,16 @@ class Model(OsmObject):
             schedule.name = name
         return schedule
 
+    def create_daily_schedule(
+        self,
+        name: str,
+        hours: int,
+    ) -> ScheduleRuleset:
+        """Create a fractional daily ScheduleRuleset."""
+        from .schedules import create_daily_schedule
+
+        return create_daily_schedule(self, name, hours)
+
     def add_schedule_constant(
         self,
         name: str | None = None,

@@ -26,6 +26,7 @@ from .electric_equipment_definition import ElectricEquipmentDefinition
 from .people import People
 from .lights import Lights
 from .electric_equipment import ElectricEquipment
+from .schedules import create_daily_schedule
 
 # Suppress SWIG memory leak warnings
 warnings.filterwarnings("ignore", message="swig/python detected a memory leak")
@@ -52,6 +53,7 @@ __all__ = [
     "People",
     "Lights",
     "ElectricEquipment",
+    "create_daily_schedule",
     "wrap",
     "wrap_collection",
     "register_custom_wrapper",
