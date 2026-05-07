@@ -1,66 +1,14 @@
 """Wrapper for openstudio.model.Space."""
 from .base import OsmObject
-from .space_type import SpaceType
-from .thermal_zone import ThermalZone
-from .building_story import BuildingStory
-from .registry import register_custom_wrapper, wrap
+from .registry import register_custom_wrapper
 
 
-@register_custom_wrapper('Space')
+@register_custom_wrapper("Space")
 class Space(OsmObject):
 
     @property
-    def space_type(self) -> SpaceType | None:
-        """Get the space type for this space.
-
-        Returns:
-            SpaceType or None
-        """
-        raw_space_type = self._os_obj.spaceType()
-        if raw_space_type.is_initialized():
-            return wrap(raw_space_type.get())  # type: ignore
-        return None
-
-    @property
-    def thermal_zone(self) -> ThermalZone | None:
-        """Get the thermal zone for this space.
-
-        Returns:
-            ThermalZone or None
-        """
-        raw_thermal_zone = self._os_obj.thermalZone()
-        if raw_thermal_zone.is_initialized():
-            return wrap(raw_thermal_zone.get())  # type: ignore
-        return None
-
-    @property
-    def building_story(self) -> BuildingStory | None:
-        """Get the building story for this space.
-
-        Returns:
-            BuildingStory or None
-        """
-        raw_building_story = self._os_obj.buildingStory()
-        if raw_building_story.is_initialized():
-            return wrap(raw_building_story.get())  # type: ignore
-        return None
-
-    @property
-    def floor_area(self) -> float:
-        """Floor area in m²
-
-        Returns:
-            float: Floor area in square meters
-        """
-        return self._os_obj.floorArea()
-
-    @property
     def area(self) -> float:
-        """Floor area in m²
-
-        Returns:
-            float: Floor area in square meters
-        """
+        """Floor area in square meters."""
         return self._os_obj.floorArea()
 
     def reset_space_type(self) -> None:
@@ -72,16 +20,9 @@ class Space(OsmObject):
         self._os_obj.resetThermalZone()
 
     def polygon_2d(self) -> list[tuple[float, float]]:
-        """Get the 2D polygon representation of the space.
-
-        Returns:
-            A list of (x, y) tuples representing the polygon vertices.
-        """
+        """Get the 2D polygon representation of the space."""
         raw_polygon = self._os_obj.floorPrint()
-        points = []
-        for point in raw_polygon:
-            points.append((point.x(), point.y()))
-        return points
+        return [(point.x(), point.y()) for point in raw_polygon]
 
     def _repr_html_(self) -> str:
         """Rich Jupyter display showing space details."""
@@ -93,7 +34,7 @@ class Space(OsmObject):
             return (
                 f"<div style=\"{style}\">"
                 f"<strong>Space:</strong> {self.name}<br>"
-                f"<em>Floor Area:</em> {self.floor_area:.2f} m²<br>"
+                f"<em>Floor Area:</em> {self.floor_area:.2f} m^2<br>"
                 f"</div>"
             )
         except Exception:

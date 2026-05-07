@@ -6,6 +6,7 @@ import warnings
 
 from .model import Model
 from .base import OsmObject
+from .convert import Convert
 from .registry import wrap, wrap_collection, register_custom_wrapper
 
 # Import custom wrappers to register them
@@ -26,6 +27,9 @@ from .electric_equipment_definition import ElectricEquipmentDefinition
 from .people import People
 from .lights import Lights
 from .electric_equipment import ElectricEquipment
+from .air_loop import AirLoopHVAC
+from .setpoint_manager import SetpointManagerOutdoorAirReset
+from .zone_hvac import ZoneHVACUnitHeater
 from .schedules import create_daily_schedule
 
 # Suppress SWIG memory leak warnings
@@ -36,6 +40,7 @@ __version__ = "0.1.0"
 __all__ = [
     "Model",
     "OsmObject",
+    "Convert",
     "Space",
     "SpaceType",
     "ThermalZone",
@@ -53,6 +58,9 @@ __all__ = [
     "People",
     "Lights",
     "ElectricEquipment",
+    "AirLoopHVAC",
+    "SetpointManagerOutdoorAirReset",
+    "ZoneHVACUnitHeater",
     "create_daily_schedule",
     "wrap",
     "wrap_collection",

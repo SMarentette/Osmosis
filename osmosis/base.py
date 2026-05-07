@@ -4,6 +4,13 @@ from __future__ import annotations
 from typing import Any
 
 
+class NameString(str):
+    """String value that also supports SDK-style name() calls."""
+
+    def __call__(self) -> str:
+        return str(self)
+
+
 class OsmObject:
     """
     Base class providing Pythonic access to OpenStudio SDK objects.
@@ -42,7 +49,7 @@ class OsmObject:
             return None
 
         value = str(result).strip()
-        return value or None
+        return NameString(value) if value else None
 
     @name.setter
     def name(self, value: str) -> None:
@@ -69,7 +76,14 @@ class OsmObject:
         from .registry import wrap
         return wrap(self._os_obj.additionalProperties())
 
-    def __getattr__(self, name: str):
+    def remove(self) -> Any:
+        """Remove this object from the OpenStudio model."""
+        if not hasattr(self._os_obj, "remove"):
+            raise AttributeError(f"Cannot remove '{type(self).__name__}'")
+
+        return self._os_obj.remove()
+
+    def __getattr__(self, name: str) -> Any:
         """
         Map attribute access to SDK getter methods.
 
@@ -84,44 +98,54 @@ class OsmObject:
             raise AttributeError(f"'{type(self).__name__}' "
                                  f"has no attribute '{name}'")
 
+        original_name = name
+
         # Check cache first
         cache_key = (type(self._os_obj), name)
         if cache_key in OsmObject._attr_cache:
             cached_method = OsmObject._attr_cache[cache_key]
-            result = getattr(self._os_obj, cached_method)()
-            return self._unwrap(result)
+            result = self._call_or_value(getattr(self._os_obj, cached_method))
+            return self._unwrap(result, original_name)
 
         # Try camelCase getter: getX(), where X = attribute name
         getter_name = f"get{name[0].upper()}{name[1:]}"
         if hasattr(self._os_obj, getter_name):
             OsmObject._attr_cache[cache_key] = getter_name
-            result = getattr(self._os_obj, getter_name)()
-            return self._unwrap(result)
+            result = self._call_or_value(getattr(self._os_obj, getter_name))
+            return self._unwrap(result, original_name)
 
         # Try snake_case to getCamelCase: x_y -> getXY
         camel_name = self._snake_to_camel(name)
         getter_camel_name = f"get{camel_name[0].upper()}{camel_name[1:]}"
         if hasattr(self._os_obj, getter_camel_name):
             OsmObject._attr_cache[cache_key] = getter_camel_name
-            result = getattr(self._os_obj, getter_camel_name)()
-            return self._unwrap(result)
+            result = self._call_or_value(getattr(self._os_obj, getter_camel_name))
+            return self._unwrap(result, original_name)
 
         # Try direct method name
         if hasattr(self._os_obj, name):
             OsmObject._attr_cache[cache_key] = name
-            result = getattr(self._os_obj, name)()
-            return self._unwrap(result)
+            result = self._call_or_value(getattr(self._os_obj, name))
+            return self._unwrap(result, original_name)
 
         # Try snake_case to camelCase: x_y -> xY
         if hasattr(self._os_obj, camel_name):
             OsmObject._attr_cache[cache_key] = camel_name
-            result = getattr(self._os_obj, camel_name)()
-            return self._unwrap(result)
+            result = self._call_or_value(getattr(self._os_obj, camel_name))
+            return self._unwrap(result, original_name)
+
+        if original_name.endswith("s"):
+            singular_result = self.__getattr__(original_name[:-1])
+            if singular_result is None:
+                return []
+            if isinstance(singular_result, list):
+                return singular_result
+            return [singular_result]
 
         raise AttributeError(f"'{type(self).__name__}' "
                              f"has no attribute '{name}'")
 
-    def __setattr__(self, name: str, value):
+    def __setattr__(self, name: str, value: Any) -> None:
         """
         Map attribute setting to SDK setter methods
 
@@ -130,6 +154,11 @@ class OsmObject:
         """
         if name.startswith("_"):
             object.__setattr__(self, name, value)
+            return
+
+        descriptor = getattr(type(self), name, None)
+        if hasattr(descriptor, "__set__"):
+            descriptor.__set__(self, value)
             return
 
         if isinstance(value, OsmObject):
@@ -149,7 +178,7 @@ class OsmObject:
         raise AttributeError(f"Cannot set '{name}' on '{type(self).__name__}'")
 
     @staticmethod
-    def _unwrap(result):
+    def _unwrap(result: Any, attr_name: str | None = None) -> Any:
         """
         Handle SWIG Optional<T> types.
 
@@ -167,13 +196,27 @@ class OsmObject:
                     return None
             except Exception:
                 return result
-        return OsmObject._wrap_sdk_result(result)
+        return OsmObject._wrap_sdk_result(result, attr_name)
 
     @staticmethod
-    def _wrap_sdk_result(result):
+    def _call_or_value(member: Any) -> Any:
+        if callable(member):
+            return member()
+        return member
+
+    @staticmethod
+    def _wrap_sdk_result(result: Any, attr_name: str | None = None) -> Any:
         """Wrap OpenStudio SDK objects while leaving Python scalars intact."""
         if isinstance(result, OsmObject):
             return result
+
+        if isinstance(result, (list, tuple)):
+            items = [OsmObject._wrap_sdk_result(item) for item in result]
+            if attr_name and not OsmObject._is_plural_attribute(attr_name):
+                if not items:
+                    return None
+                return items[0]
+            return items
 
         module_name = getattr(type(result), "__module__", "")
         if module_name.startswith("openstudio."):
@@ -183,15 +226,26 @@ class OsmObject:
         return result
 
     @staticmethod
+    def _is_plural_attribute(name: str) -> bool:
+        """Best-effort check for whether an attribute name expects a collection."""
+        return name.endswith("s")
+
+    @staticmethod
     def _snake_to_camel(snake_str: str) -> str:
         """
         Convert snake_case to camelCase.
 
         Examples:
             some_value => someValue
+            account_for_x => accountforX
+            setpoint_at_x => setpointatX
         """
         parts = snake_str.split('_')
-        return parts[0] + ''.join(word.capitalize() for word in parts[1:])
+        connector_words = {"at", "for"}
+        return parts[0] + ''.join(
+            word if word in connector_words else word.capitalize()
+            for word in parts[1:]
+        )
 
     def __repr__(self) -> str:
         """

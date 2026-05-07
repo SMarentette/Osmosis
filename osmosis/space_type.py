@@ -2,20 +2,12 @@
 from __future__ import annotations
 
 from .base import OsmObject
-from .default_schedule_set import DefaultScheduleSet
-from .registry import register_custom_wrapper, wrap
+from .registry import register_custom_wrapper
 
 
 @register_custom_wrapper('SpaceType')
 class SpaceType(OsmObject):
     """Pythonic wrapper for openstudio.model.SpaceType"""
-
-    @property
-    def default_schedule_set(self) -> DefaultScheduleSet | None:
-        raw_schedule_set = self._os_obj.defaultScheduleSet()
-        if raw_schedule_set.is_initialized():
-            return wrap(raw_schedule_set.get())  # type: ignore
-        return None
 
     def reset_default_schedule_set(self) -> None:
         self._os_obj.resetDefaultScheduleSet()

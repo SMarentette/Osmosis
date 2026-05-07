@@ -52,6 +52,32 @@ for zone in model.thermal_zones:
 model.save("building.osm", overwrite=True)
 ```
 
+## Air Loop Example
+
+```python
+from osmosis import Convert, Model
+
+model = Model.load("building.osm")
+
+for air_loop in model.air_loops:
+    print(air_loop.name)
+    print([fan.name for fan in air_loop.fans])
+    print([coil.name for coil in air_loop.coils])
+
+for spm in model.setpoint_manager_outdoor_air_resets:
+    spm.setpoint_at_outdoor_low_temperature = 28
+    spm.setpoint_at_outdoor_high_temperature = 12
+
+for zone in model.thermal_zones:
+    sizing_zone = zone.sizing_zone
+    sizing_zone.zone_cooling_design_supply_air_temperature = 12
+    sizing_zone.zone_heating_design_supply_air_temperature = 42
+
+    mixing = zone.zone_mixing
+    if mixing:
+        print(Convert.m3_per_second_to_cfm(mixing.design_flow_rate))
+```
+
 ## Additional Properties
 
 Osmosis provides support for OpenStudio's `AdditionalProperties` feature, allowing you to attach custom metadata to any model object.

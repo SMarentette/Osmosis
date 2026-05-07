@@ -43,12 +43,17 @@ OSM_OBJECTS = [
     "AirTerminalSingleDuctVAVReheat", "AirTerminalSingleDuctVAVNoReheat",
     "AirTerminalSingleDuctParallelPIUReheat",
     "AirTerminalSingleDuctSeriesPIUReheat",
+    "ZoneHVACEquipmentList", "ZoneHVACIdealLoadsAirSystem",
     "ZoneHVACFourPipeFanCoil", "ZoneHVACPackagedTerminalAirConditioner",
     "ZoneHVACBaseboardConvectiveWater", "ZoneHVACEnergyRecoveryVentilator",
     "ZoneHVACLowTempRadiantVarFlow",
     # setpoints/thermostats
     "ThermostatSetpointDualSetpoint", "SetpointManagerScheduled",
+    "SetpointManagerScheduledDualSetpoint", "SetpointManagerOutdoorAirReset",
     "SetpointManagerSingleZoneReheat", "SetpointManagerMixedAir",
+    "SetpointManagerSingleZoneCooling", "SetpointManagerSingleZoneHeating",
+    "SetpointManagerSystemNodeResetTemperature", "SetpointManagerWarmest",
+    "SetpointManagerWarmestTemperatureFlow",
     "AvailabilityManagerNightCycle", "ControllerWaterCoil",
     # service water use
     "WaterUseConnections", "WaterUseEquipment", "WaterUseEquipmentDefinition",
@@ -74,6 +79,56 @@ _wrapper_cache = {}
 
 # Custom wrapper classes (for objects that need special behavior)
 _custom_wrappers = {}
+
+
+# OpenStudio collection getters often return base classes. Downcast these to
+# their concrete SDK type before selecting an Osmosis wrapper.
+_DOWNCAST_CANDIDATES = {
+    "ModelObject": [
+        "HVACComponent",
+    ],
+    "HVACComponent": [
+        "FanConstantVolume",
+        "FanOnOff",
+        "FanSystemModel",
+        "FanVariableVolume",
+        "FanZoneExhaust",
+        "CoilHeatingElectric",
+        "CoilHeatingWater",
+        "CoilHeatingGas",
+        "CoilHeatingDXSingleSpeed",
+        "CoilCoolingWater",
+        "CoilCoolingDXSingleSpeed",
+    ],
+    "SetpointManager": [
+        "SetpointManagerScheduled",
+        "SetpointManagerSingleZoneReheat",
+        "SetpointManagerMixedAir",
+        "SetpointManagerOutdoorAirReset",
+        "SetpointManagerScheduledDualSetpoint",
+        "SetpointManagerSingleZoneCooling",
+        "SetpointManagerSingleZoneHeating",
+        "SetpointManagerSystemNodeResetTemperature",
+        "SetpointManagerWarmest",
+        "SetpointManagerWarmestTemperatureFlow",
+    ],
+    "ZoneHVACComponent": [
+        "ZoneHVACUnitHeater",
+        "ZoneHVACBaseboardConvectiveElectric",
+        "ZoneHVACBaseboardConvectiveWater",
+        "ZoneHVACBaseboardRadiantConvectiveElectric",
+        "ZoneHVACBaseboardRadiantConvectiveWater",
+        "ZoneHVACIdealLoadsAirSystem",
+        "ZoneHVACFourPipeFanCoil",
+        "ZoneHVACPackagedTerminalAirConditioner",
+        "ZoneHVACPackagedTerminalHeatPump",
+        "ZoneHVACUnitVentilator",
+        "ZoneHVACEnergyRecoveryVentilator",
+        "ZoneHVACLowTempRadiantConstFlow",
+        "ZoneHVACLowTempRadiantVarFlow",
+        "ZoneHVACLowTemperatureRadiantElectric",
+    ],
+}
 
 
 def register_custom_wrapper(sdk_type_name):
@@ -120,6 +175,29 @@ def get_wrapper_class(sdk_type_name):
     return wrapper_class
 
 
+def downcast(os_obj):
+    """Return a concrete OpenStudio SDK object when a base object supports it."""
+    current = os_obj
+    for sdk_type_name in _DOWNCAST_CANDIDATES.get(type(os_obj).__name__, []):
+        cast_method_name = f"to_{sdk_type_name}"
+        if not hasattr(os_obj, cast_method_name):
+            continue
+
+        try:
+            optional = getattr(os_obj, cast_method_name)()
+        except Exception:
+            continue
+
+        if hasattr(optional, "is_initialized") and optional.is_initialized():
+            current = optional.get()
+            break
+
+    if current is os_obj:
+        return os_obj
+
+    return downcast(current)
+
+
 def wrap(os_obj):
     """Wrap an OpenStudio SDK object with appropriate wrapper class
     Args:
@@ -130,6 +208,7 @@ def wrap(os_obj):
     """
     if os_obj is None:
         return None
+    os_obj = downcast(os_obj)
     sdk_type_name = type(os_obj).__name__
     wrapper_class = get_wrapper_class(sdk_type_name)
     return wrapper_class(os_obj)

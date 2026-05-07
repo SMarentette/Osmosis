@@ -6,7 +6,7 @@ from typing import Any
 import openstudio
 
 from .base import OsmObject
-from .registry import COLLECTION_ATTRIBUTE_MAP, get_wrapper_class
+from .registry import COLLECTION_ATTRIBUTE_MAP, get_wrapper_class, wrap
 from .space import Space
 from .space_type import SpaceType
 from .thermal_zone import ThermalZone
@@ -216,6 +216,42 @@ class Model(OsmObject):
             equipment.name = name
         return equipment
 
+    @property
+    def air_loops(self) -> list[OsmObject]:
+        """Get all air loops in the model."""
+        return [wrap(air_loop) for air_loop in self._os_obj.getAirLoopHVACs()]
+
+    @property
+    def setpoint_managers(self) -> list[OsmObject]:
+        """Get all setpoint managers in the model."""
+        return [
+            wrap(setpoint_manager)
+            for setpoint_manager in self._os_obj.getSetpointManagers()
+        ]
+
+    @property
+    def setpoint_manager_outdoor_air_resets(self) -> list[OsmObject]:
+        """Get all outdoor-air-reset setpoint managers in the model."""
+        return [
+            wrap(setpoint_manager)
+            for setpoint_manager in self._os_obj.getSetpointManagerOutdoorAirResets()
+        ]
+
+    @property
+    def zone_hvacs(self) -> list[OsmObject]:
+        """Get all zone HVAC components in the model."""
+        raw_components = self._os_obj.getZoneHVACComponents()
+        return [wrap(component) for component in raw_components]
+
+    @property
+    def zone_hvac_equipment_lists(self) -> list[OsmObject]:
+        """Get all zone HVAC equipment lists in the model."""
+        raw_equipment_lists = self._os_obj.getZoneHVACEquipmentLists()
+        return [
+            get_wrapper_class(type(equipment_list).__name__)(equipment_list)
+            for equipment_list in raw_equipment_lists
+        ]
+
     def schedule_sets(self, number) -> list[DefaultScheduleSet]:
         """Get all DefaultScheduleSets in the model.
 
@@ -252,6 +288,8 @@ class Model(OsmObject):
 
         sdk_type_name = COLLECTION_ATTRIBUTE_MAP.get(name)
         if sdk_type_name and isinstance(result, (list, tuple)):
+            if all(isinstance(item, OsmObject) for item in result):
+                return result
             wrapper_class = get_wrapper_class(sdk_type_name)
             return [wrapper_class(item) for item in result]
 
