@@ -63,6 +63,9 @@ for air_loop in model.air_loops:
     print(air_loop.name)
     print([fan.name for fan in air_loop.fans])
     print([coil.name for coil in air_loop.coils])
+    for fan in air_loop.fans:
+        # Assuming FanSystemModel objs 
+        fan.electric_power_per_unit_flow_rate = 0.8 * Convert.W_PER_CFM_TO_W_PER_M3_PER_SECOND
 
 for spm in model.setpoint_manager_outdoor_air_resets:
     spm.setpoint_at_outdoor_low_temperature = 28
