@@ -33,10 +33,22 @@ class OsmObject:
         """
         object.__setattr__(self, "_os_obj", os_obj)
 
+    @classmethod
+    def unwrap(cls, obj):
+        """Return the raw SDK object from either a wrapped or raw input."""
+        if isinstance(obj, cls):
+            return obj._os_obj
+        return obj
+
     @property
     def raw(self) -> Any:
         """Return the underlying SWIG object"""
         return self._os_obj
+
+    def add_to_node(self, node) -> "OsmObject":
+        """Connect this component to a loop node. Returns self for chaining."""
+        self._os_obj.addToNode(OsmObject.unwrap(node))
+        return self
 
     @property
     def name(self) -> str | None:
@@ -116,11 +128,12 @@ class OsmObject:
 
         # Try snake_case to getCamelCase: x_y -> getXY
         camel_name = self._snake_to_camel(name)
-        getter_camel_name = f"get{camel_name[0].upper()}{camel_name[1:]}"
-        if hasattr(self._os_obj, getter_camel_name):
-            OsmObject._attr_cache[cache_key] = getter_camel_name
-            result = self._call_or_value(getattr(self._os_obj, getter_camel_name))
-            return self._unwrap(result, original_name)
+        for candidate in self._snake_to_camel_candidates(name):
+            getter_camel_name = f"get{candidate[0].upper()}{candidate[1:]}"
+            if hasattr(self._os_obj, getter_camel_name):
+                OsmObject._attr_cache[cache_key] = getter_camel_name
+                result = self._call_or_value(getattr(self._os_obj, getter_camel_name))
+                return self._unwrap(result, original_name)
 
         # Try direct method name
         if hasattr(self._os_obj, name):
@@ -129,10 +142,11 @@ class OsmObject:
             return self._unwrap(result, original_name)
 
         # Try snake_case to camelCase: x_y -> xY
-        if hasattr(self._os_obj, camel_name):
-            OsmObject._attr_cache[cache_key] = camel_name
-            result = self._call_or_value(getattr(self._os_obj, camel_name))
-            return self._unwrap(result, original_name)
+        for candidate in self._snake_to_camel_candidates(name):
+            if hasattr(self._os_obj, candidate):
+                OsmObject._attr_cache[cache_key] = candidate
+                result = self._call_or_value(getattr(self._os_obj, candidate))
+                return self._unwrap(result, original_name)
 
         if original_name.endswith("s"):
             singular_result = self.__getattr__(original_name[:-1])
@@ -165,15 +179,15 @@ class OsmObject:
             value = value.raw
 
         # If name contains "_", convert snake_case to camelCase
-        if "_" in name:
-            name = self._snake_to_camel(name)
+        names = self._snake_to_camel_candidates(name) if "_" in name else [name]
 
-        # Try camelCase setter: setX(value) , where X = attribute name
-        setter_name = f"set{name[0].upper()}{name[1:]}"
+        for candidate in names:
+            # Try camelCase setter: setX(value) , where X = attribute name
+            setter_name = f"set{candidate[0].upper()}{candidate[1:]}"
 
-        if hasattr(self._os_obj, setter_name):
-            getattr(self._os_obj, setter_name)(value)
-            return
+            if hasattr(self._os_obj, setter_name):
+                getattr(self._os_obj, setter_name)(value)
+                return
 
         raise AttributeError(f"Cannot set '{name}' on '{type(self).__name__}'")
 
@@ -246,6 +260,20 @@ class OsmObject:
             word if word in connector_words else word.capitalize()
             for word in parts[1:]
         )
+
+    @staticmethod
+    def _snake_to_camel_candidates(snake_str: str) -> list[str]:
+        candidates = [OsmObject._snake_to_camel(snake_str)]
+        if "_in_" in snake_str:
+            parts = snake_str.split("_")
+            connector_words = {"at", "for", "in"}
+            candidate = parts[0] + ''.join(
+                word if word in connector_words else word.capitalize()
+                for word in parts[1:]
+            )
+            if candidate not in candidates:
+                candidates.append(candidate)
+        return candidates
 
     def __repr__(self) -> str:
         """

@@ -47,10 +47,10 @@ def test_model_can_filter_outdoor_air_reset_setpoint_managers():
     assert type(resets[0]).__name__ == "SetpointManagerOutdoorAirReset"
 
 
-def test_outdoor_air_reset_collection_mapping_is_registered():
-    from osmosis.registry import COLLECTION_ATTRIBUTE_MAP
-
-    assert (
-        COLLECTION_ATTRIBUTE_MAP["setpointManagerOutdoorAirResets"]
-        == "SetpointManagerOutdoorAirReset"
-    )
+def test_outdoor_air_reset_collection_is_accessible():
+    """Collection access works without a static type map."""
+    model = osmo.Model.new()
+    spm = openstudio.model.SetpointManagerOutdoorAirReset(model._os_obj)
+    spm.setName("SAT Reset 2")
+    resets = model.setpoint_manager_outdoor_air_resets
+    assert any(r.name == "SAT Reset 2" for r in resets)

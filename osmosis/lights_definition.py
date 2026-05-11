@@ -9,9 +9,6 @@ from .registry import register_custom_wrapper
 class LightsDefinition(OsmObject):
     """Pythonic wrapper for openstudio.model.LightsDefinition."""
 
-    def set_watts_per_space_floor_area(self, value: float) -> None:
-        self._os_obj.setWattsperSpaceFloorArea(value)
-
     def _repr_html_(self) -> str:
         try:
             return f"<strong>LightsDefinition:</strong> {self.name}"

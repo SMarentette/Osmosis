@@ -9,12 +9,6 @@ from .registry import register_custom_wrapper
 class PeopleDefinition(OsmObject):
     """Pythonic wrapper for openstudio.model.PeopleDefinition."""
 
-    def set_people_per_space_floor_area(self, value: float) -> None:
-        self._os_obj.setPeopleperSpaceFloorArea(value)
-
-    def set_fraction_radiant(self, value: float) -> None:
-        self._os_obj.setFractionRadiant(value)
-
     def _repr_html_(self) -> str:
         try:
             return f"<strong>PeopleDefinition:</strong> {self.name}"

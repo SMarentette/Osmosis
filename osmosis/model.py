@@ -6,14 +6,10 @@ from typing import Any
 import openstudio
 
 from .base import OsmObject
-from .registry import COLLECTION_ATTRIBUTE_MAP, get_wrapper_class, wrap
-from .space import Space
+from .registry import get_wrapper_for_snake, wrap, wrap_collection
+from .manager import ComponentManager
 from .space_type import SpaceType
-from .thermal_zone import ThermalZone
 from .default_schedule_set import DefaultScheduleSet
-from .schedule_type_limits import ScheduleTypeLimits
-from .schedule_ruleset import ScheduleRuleset
-from .schedule_constant import ScheduleConstant
 from .people_definition import PeopleDefinition
 from .lights_definition import LightsDefinition
 from .electric_equipment_definition import ElectricEquipmentDefinition
@@ -55,13 +51,6 @@ class Model(OsmObject):
             raise RuntimeError(f"File already exists: {path}")
         return self.save(path, overwrite=False)
 
-    def add_space(self, name: str | None = None) -> Space:
-        """Create a new Space in the model."""
-        space = Space(openstudio.model.Space(self._os_obj))
-        if name:
-            space.name = name
-        return space
-
     def add_space_type(self, name: str | None = None,
                        template: SpaceType | None = None) -> SpaceType:
         """Create a new SpaceType in the model.
@@ -92,33 +81,6 @@ class Model(OsmObject):
                 space_type.name = name
             return space_type
 
-    def add_thermal_zone(self, name: str | None = None) -> ThermalZone:
-        """Create a new ThermalZone in the model."""
-        zone = ThermalZone(openstudio.model.ThermalZone(self._os_obj))
-        if name:
-            zone.name = name
-        return zone
-
-    def add_schedule_type_limits(
-        self,
-        name: str | None = None,
-    ) -> ScheduleTypeLimits:
-        limits = ScheduleTypeLimits(
-            openstudio.model.ScheduleTypeLimits(self._os_obj)
-        )
-        if name:
-            limits.name = name
-        return limits
-
-    def add_schedule_ruleset(
-        self,
-        name: str | None = None,
-    ) -> ScheduleRuleset:
-        schedule = ScheduleRuleset(openstudio.model.ScheduleRuleset(self._os_obj))
-        if name:
-            schedule.name = name
-        return schedule
-
     def create_daily_schedule(
         self,
         name: str,
@@ -128,61 +90,6 @@ class Model(OsmObject):
         from .schedules import create_daily_schedule
 
         return create_daily_schedule(self, name, hours)
-
-    def add_schedule_constant(
-        self,
-        name: str | None = None,
-    ) -> ScheduleConstant:
-        schedule = ScheduleConstant(
-            openstudio.model.ScheduleConstant(self._os_obj)
-        )
-        if name:
-            schedule.name = name
-        return schedule
-
-    def add_default_schedule_set(
-        self,
-        name: str | None = None,
-    ) -> DefaultScheduleSet:
-        schedule_set = DefaultScheduleSet(
-            openstudio.model.DefaultScheduleSet(self._os_obj)
-        )
-        if name:
-            schedule_set.name = name
-        return schedule_set
-
-    def add_people_definition(
-        self,
-        name: str | None = None,
-    ) -> PeopleDefinition:
-        definition = PeopleDefinition(
-            openstudio.model.PeopleDefinition(self._os_obj)
-        )
-        if name:
-            definition.name = name
-        return definition
-
-    def add_lights_definition(
-        self,
-        name: str | None = None,
-    ) -> LightsDefinition:
-        definition = LightsDefinition(
-            openstudio.model.LightsDefinition(self._os_obj)
-        )
-        if name:
-            definition.name = name
-        return definition
-
-    def add_electric_equipment_definition(
-        self,
-        name: str | None = None,
-    ) -> ElectricEquipmentDefinition:
-        definition = ElectricEquipmentDefinition(
-            openstudio.model.ElectricEquipmentDefinition(self._os_obj)
-        )
-        if name:
-            definition.name = name
-        return definition
 
     def add_people(
         self,
@@ -215,27 +122,16 @@ class Model(OsmObject):
         if name:
             equipment.name = name
         return equipment
-
+    
+    @property
+    def air_loop(self):
+        """Alias for air_loop_hvac for convenience."""
+        return self.air_loop_hvac
+        
     @property
     def air_loops(self) -> list[OsmObject]:
         """Get all air loops in the model."""
         return [wrap(air_loop) for air_loop in self._os_obj.getAirLoopHVACs()]
-
-    @property
-    def setpoint_managers(self) -> list[OsmObject]:
-        """Get all setpoint managers in the model."""
-        return [
-            wrap(setpoint_manager)
-            for setpoint_manager in self._os_obj.getSetpointManagers()
-        ]
-
-    @property
-    def setpoint_manager_outdoor_air_resets(self) -> list[OsmObject]:
-        """Get all outdoor-air-reset setpoint managers in the model."""
-        return [
-            wrap(setpoint_manager)
-            for setpoint_manager in self._os_obj.getSetpointManagerOutdoorAirResets()
-        ]
 
     @property
     def zone_hvacs(self) -> list[OsmObject]:
@@ -246,28 +142,35 @@ class Model(OsmObject):
     @property
     def zone_hvac_equipment_lists(self) -> list[OsmObject]:
         """Get all zone HVAC equipment lists in the model."""
-        raw_equipment_lists = self._os_obj.getZoneHVACEquipmentLists()
-        return [
-            get_wrapper_class(type(equipment_list).__name__)(equipment_list)
-            for equipment_list in raw_equipment_lists
-        ]
+        return [wrap(eq) for eq in self._os_obj.getZoneHVACEquipmentLists()]
 
-    def schedule_sets(self, number) -> list[DefaultScheduleSet]:
-        """Get all DefaultScheduleSets in the model.
-
-        Returns:
-            list[DefaultScheduleSet]: All schedule sets in the model
-        """
-        raw_sets = self._os_obj.getDefaultScheduleSets()
-        return [DefaultScheduleSet(item) for item in raw_sets]
+    @property
+    def schedule_sets(self) -> list[DefaultScheduleSet]:
+        """Get all DefaultScheduleSets in the model."""
+        return [DefaultScheduleSet(item) for item in self._os_obj.getDefaultScheduleSets()]
 
     def __getattr__(self, name: str) -> Any:
         """
         Enable snake_case access to camelCase attributes.
 
-        Converts snake_case names to camelCase (x_ys -> xYs)
-        and auto-wraps collections with Osmosis wrapper classes.
+        First checks for a registered ComponentManager (e.g.
+        model.coil_heating_electric), then falls back to camelCase
+        attribute mapping and collection wrapping.
         """
+        # --- ComponentManager dispatch ---
+        result = get_wrapper_for_snake(name)
+        if result is not None:
+            sdk_name, wrapper_cls = result
+            os_cls = getattr(openstudio.model, sdk_name, None)
+            if os_cls is None:
+                raise AttributeError(
+                    f"Osmosis wrapper '{sdk_name}' is registered but "
+                    f"openstudio.model.{sdk_name} does not exist in the "
+                    f"installed SDK. Check your OpenStudio version."
+                )
+            return ComponentManager(self._os_obj, os_cls, wrapper_cls)
+
+        # --- Existing camelCase / collection fallback ---
         original_name = name
 
         # If snake_case, convert to camelCase (x_ys -> xYs)
@@ -286,12 +189,10 @@ class Model(OsmObject):
             )
             raise AttributeError(msg)
 
-        sdk_type_name = COLLECTION_ATTRIBUTE_MAP.get(name)
-        if sdk_type_name and isinstance(result, (list, tuple)):
+        if isinstance(result, (list, tuple)):
             if all(isinstance(item, OsmObject) for item in result):
                 return result
-            wrapper_class = get_wrapper_class(sdk_type_name)
-            return [wrapper_class(item) for item in result]
+            return wrap_collection(result)
 
         return result
 

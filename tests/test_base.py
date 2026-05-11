@@ -68,6 +68,24 @@ def test_snake_case_preserves_lowercase_at_connector_word():
     assert obj.raw.value == 12
 
 
+class FakeLowercaseInConnector:
+    def allOutdoorAirinCooling(self):
+        return False
+
+    def setAllOutdoorAirinCooling(self, value):
+        self.value = value
+
+
+def test_snake_case_can_fall_back_to_lowercase_in_connector_word():
+    obj = OsmObject(FakeLowercaseInConnector())
+
+    assert obj.all_outdoor_air_in_cooling is False
+
+    obj.all_outdoor_air_in_cooling = True
+
+    assert obj.raw.value is True
+
+
 class FakeRemovable:
     def __init__(self):
         self.removed = False

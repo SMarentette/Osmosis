@@ -8,6 +8,7 @@ from .model import Model
 from .base import OsmObject
 from .convert import Convert
 from .registry import wrap, wrap_collection, register_custom_wrapper
+from .manager import ComponentManager
 
 # Import custom wrappers to register them
 from .space import Space
@@ -29,7 +30,13 @@ from .lights import Lights
 from .electric_equipment import ElectricEquipment
 from .air_loop import AirLoopHVAC
 from .setpoint_manager import SetpointManagerOutdoorAirReset
+from .setpoint_manager_single_zone_reheat import SetpointManagerSingleZoneReheat
 from .zone_hvac import ZoneHVACUnitHeater
+from .fan_system_model import FanSystemModel
+from .coil_cooling_dx_single_speed import CoilCoolingDXSingleSpeed
+from .coil_heating_dx_single_speed import CoilHeatingDXSingleSpeed
+from .coil_heating_electric import CoilHeatingElectric
+from .air_loop_hvac_unitary_system import AirLoopHVACUnitarySystem
 from .schedules import create_daily_schedule
 
 # Suppress SWIG memory leak warnings
@@ -41,6 +48,7 @@ __all__ = [
     "Model",
     "OsmObject",
     "Convert",
+    "ComponentManager",
     "Space",
     "SpaceType",
     "ThermalZone",
@@ -60,7 +68,13 @@ __all__ = [
     "ElectricEquipment",
     "AirLoopHVAC",
     "SetpointManagerOutdoorAirReset",
+    "SetpointManagerSingleZoneReheat",
     "ZoneHVACUnitHeater",
+    "FanSystemModel",
+    "CoilCoolingDXSingleSpeed",
+    "CoilHeatingDXSingleSpeed",
+    "CoilHeatingElectric",
+    "AirLoopHVACUnitarySystem",
     "create_daily_schedule",
     "wrap",
     "wrap_collection",
