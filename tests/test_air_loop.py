@@ -250,6 +250,34 @@ def test_air_loop_can_create_and_add_erv_to_existing_oa_system():
     assert "ERV<br/>Main Loop ERV" in loop._build_mermaid()
 
 
+def test_air_loop_diagram_orders_oa_supply_then_demand_and_can_minimize_demand():
+    model = osmo.Model.new()
+    loop = model.air_loop.create(name="Main Loop")
+    controller_oa = openstudio.model.ControllerOutdoorAir(model.raw)
+    controller_mech_vent = openstudio.model.ControllerMechanicalVentilation(model.raw)
+    oa_system = openstudio.model.AirLoopHVACOutdoorAirSystem(model.raw)
+    loop.add_outdoor_air(oa_system, controller_oa, controller_mech_vent)
+    loop.add_branch(model.thermal_zone.create(name="Zone 1"))
+    loop.add_branch(model.thermal_zone.create(name="Zone 2"))
+
+    diagram = loop._build_mermaid()
+    minimized = loop._build_mermaid(minimize_demand=True)
+
+    assert "graph LR" in diagram
+    assert diagram.index('subgraph OA ["Outdoor Air"]') < diagram.index(
+        'subgraph SUPPLY ["Supply Side"]'
+    )
+    assert diagram.index('subgraph SUPPLY ["Supply Side"]') < diagram.index(
+        'subgraph DEMAND ["Demand Side"]'
+    )
+    assert "OA_MXR --> SI" in diagram
+    assert "SO --> ZSPLIT" in diagram
+    assert "RI -. return .-> SI" in diagram
+    assert 'ZSUMMARY[["2 Zones"]]' in minimized
+    assert "Zone 1" not in minimized
+    assert "Zone 2" not in minimized
+
+
 def test_air_loop_add_erv_creates_oa_system_when_missing():
     model = osmo.Model.new()
     loop = model.air_loop.create(name="Main Loop")
@@ -264,7 +292,10 @@ def test_air_loop_add_erv_creates_oa_system_when_missing():
 
 
 def test_mermaid_diagram_has_notebook_display_representations():
-    diagram = MermaidDiagram("graph TD\n    A --> B")
+    diagram = MermaidDiagram(
+        "graph TD\n    A --> B",
+        minimized_source="graph TD\n    A --> C",
+    )
     bundle = diagram._repr_mimebundle_()
 
     assert bundle["text/vnd.mermaid"].startswith("graph TD")
@@ -274,11 +305,14 @@ def test_mermaid_diagram_has_notebook_display_representations():
     assert "75%" in bundle["text/html"]
     assert "150%" in bundle["text/html"]
     assert "overflow-x: auto" in bundle["text/html"]
-    assert "overflow-y: hidden" in bundle["text/html"]
+    assert "overflow-y: auto" in bundle["text/html"]
+    assert "availableHeight" in bundle["text/html"]
     assert "--viewport-height" not in bundle["text/html"]
     assert "h-scroll-top" in bundle["text/html"]
     assert "v-scroll-left" not in bundle["text/html"]
     assert "v-scroll-right" not in bundle["text/html"]
+    assert "Minimize Demand" in bundle["text/html"]
+    assert "diagram-minimized" in bundle["text/html"]
     assert diagram.image_url().startswith("https://mermaid.ink/svg/")
     assert str(diagram).startswith("graph TD")
 
