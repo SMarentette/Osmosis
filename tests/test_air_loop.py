@@ -272,7 +272,9 @@ def test_air_loop_diagram_orders_oa_supply_then_demand_and_can_minimize_demand()
     )
     assert "OA_MXR --> SI" in diagram
     assert "SO --> ZSPLIT" in diagram
-    assert "RI -. return .-> SI" in diagram
+    assert 'RETURN_BACK["Return<br/>&larr; Supply"]' in diagram
+    assert "RI -.-> RETURN_BACK" in diagram
+    assert "RI -. return .-> SI" not in diagram
     assert 'ZSUMMARY[["2 Zones"]]' in minimized
     assert "Zone 1" not in minimized
     assert "Zone 2" not in minimized

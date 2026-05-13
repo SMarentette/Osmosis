@@ -92,7 +92,8 @@ class ComponentManager(Generic[T]):
 
 
 def _snake_to_setter(snake: str) -> str:
-    """Convert snake_case kwarg to SDK setter name, uppercasing known acronyms."""
+    """Convert snake_case kwarg to SDK setter name,
+    uppercasing known acronyms."""
     words = [w.upper() if w.capitalize() in _ACRONYMS else w.capitalize()
              for w in snake.split("_")]
     return "set" + "".join(words)
