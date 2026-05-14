@@ -1,5 +1,5 @@
 """
-Regenerate osmosis/model.pyi from registered wrappers only.
+Regenerate osmosis/model.pyi from registered wrappers and OpenStudio SDK classes.
 
 Usage
 -----
@@ -29,7 +29,8 @@ for _finder, module_name, _is_pkg in pkgutil.iter_modules([str(package_path)]):
     except Exception:
         pass
 
-from osmosis.registry import _registry, _snake_registry  # noqa: E402
+from osmosis.registry import _registry, _snake_registry, _to_snake  # noqa: E402
+import openstudio  # noqa: E402
 
 # ---------------------------------------------------------------------------
 
@@ -41,6 +42,8 @@ HEADER = """\
 from typing import Any
 
 from .air_loop import AirLoopHVAC
+from .plant_loop import PlantLoop
+from .schedule_constant import ScheduleConstant
 from .base import OsmObject
 from .manager import ComponentManager
 """
@@ -54,17 +57,22 @@ class Model:
     def load(cls, path: str) -> Model: ...
     def save(self, path: str, overwrite: bool = False) -> None: ...
     def save_as(self, path: str) -> None: ...
+    def create_constant_schedule(self, name: str, value: float, *, unit_type: str | None = None, lower_limit_value: float | None = None, upper_limit_value: float | None = None, numeric_type: str = "Continuous") -> ScheduleConstant: ...
     @property
     def raw(self) -> Any: ...
     @property
     def air_loop(self) -> ComponentManager[AirLoopHVAC]: ...
     @property
     def air_loops(self) -> list[AirLoopHVAC]: ...
+    @property
+    def plant_loops(self) -> list[PlantLoop]: ...
     def __getattr__(self, name: str) -> Any: ...
 """
 
 imports: list[str] = []
 properties: list[str] = []
+
+typed_properties: dict[str, str] = {}
 
 for snake_name, sdk_name in sorted(_snake_registry.items()):
     wrapper_cls = _registry.get(sdk_name)
@@ -73,10 +81,30 @@ for snake_name, sdk_name in sorted(_snake_registry.items()):
     module = wrapper_cls.__module__.split(".")[-1]
     cls_name = wrapper_cls.__name__
     imports.append(f"from .{module} import {cls_name}")
-    properties.append(
+    typed_properties[snake_name] = (
         f"    @property\n"
         f"    def {snake_name}(self) -> ComponentManager[{cls_name}]: ..."
     )
+
+for sdk_name in sorted(dir(openstudio.model)):
+    if (
+        sdk_name.startswith("_")
+        or sdk_name.startswith("Optional")
+        or sdk_name.endswith("Vector")
+    ):
+        continue
+    sdk_obj = getattr(openstudio.model, sdk_name, None)
+    if not isinstance(sdk_obj, type):
+        continue
+    snake_name = _to_snake(sdk_name)
+    if "_" not in snake_name or snake_name in typed_properties:
+        continue
+    typed_properties[snake_name] = (
+        f"    @property\n"
+        f"    def {snake_name}(self) -> ComponentManager[OsmObject]: ..."
+    )
+
+properties = [typed_properties[name] for name in sorted(typed_properties)]
 
 stub = (
     HEADER

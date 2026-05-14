@@ -29,7 +29,8 @@ from .people import People
 from .lights import Lights
 from .electric_equipment import ElectricEquipment
 from .air_loop import AirLoopHVAC
-from .setpoint_manager import SetpointManagerOutdoorAirReset
+from .plant_loop import PlantLoop
+from .setpoint_manager import SetpointManagerOutdoorAirReset, SetpointManagerScheduled
 from .setpoint_manager_single_zone_reheat import SetpointManagerSingleZoneReheat
 from .zone_hvac import ZoneHVACUnitHeater
 from .fan_system_model import FanSystemModel
@@ -67,7 +68,9 @@ __all__ = [
     "Lights",
     "ElectricEquipment",
     "AirLoopHVAC",
+    "PlantLoop",
     "SetpointManagerOutdoorAirReset",
+    "SetpointManagerScheduled",
     "SetpointManagerSingleZoneReheat",
     "ZoneHVACUnitHeater",
     "FanSystemModel",

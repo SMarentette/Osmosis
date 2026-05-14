@@ -40,3 +40,18 @@ def test_schedule_wrappers_use_base_getters_and_setters():
 
     rule.day_schedule.schedule_type_limits = limits
     assert rule.day_schedule.schedule_type_limits.handle == limits.handle
+
+
+def test_model_can_create_constant_temperature_schedule():
+    model = osmo.Model.new()
+
+    schedule = model.create_constant_schedule(
+        "HW Setpoint",
+        60.0,
+        unit_type="Temperature",
+    )
+
+    assert schedule.name == "HW Setpoint"
+    assert schedule.value == 60.0
+    assert schedule.schedule_type_limits.unit_type == "Temperature"
+    assert schedule.schedule_type_limits.numeric_type == "Continuous"

@@ -184,6 +184,21 @@ class AirLoopHVAC(OsmObject):
             erv.remove()
             raise ValueError("OpenStudio rejected adding the ERV to the OA system.")
 
+        spm_preheat = openstudio.model.SetpointManagerOutdoorAirPretreat(raw_model)
+        spm_preheat.setName(f"{loop_name} OA Preheat SPM")
+        spm_preheat.setReferenceSetpointNode(self._os_obj.supplyOutletNode())
+        spm_preheat.setMixedAirStreamNode(
+            raw_oa_system.mixedAirModelObject().get().to_Node().get()
+        )
+        spm_preheat.setOutdoorAirStreamNode(raw_oa_system.outboardOANode().get())
+        spm_preheat.setReturnAirStreamNode(
+            raw_oa_system.returnAirModelObject().get().to_Node().get()
+        )
+        oa_after_erv = raw_oa_system.outdoorAirModelObject().get().to_Node().get()
+        if not spm_preheat.addToNode(oa_after_erv):
+            spm_preheat.remove()
+            raise ValueError("OpenStudio rejected adding the OA preheat setpoint manager.")
+
         return wrap(erv)
 
     def _outdoor_air_system_raw(self):

@@ -1,4 +1,4 @@
-"""Mermaid diagram generation for air loop visualization."""
+"""Mermaid diagram generation for HVAC loop visualization."""
 
 from __future__ import annotations
 
@@ -684,6 +684,131 @@ def build_mermaid_diagram(
         lines.append("    SO --> ZSPLIT")
     if oa_raw is not None:
         lines.append("    OA_MXR --> SI")
+    if managers:
+        lines.append("    MGRS -.-> SO")
+
+    return "\n".join(lines)
+
+
+def build_plant_loop_mermaid_diagram(
+    plant_loop_raw,
+    show_names: bool = True,
+) -> str:
+    """Build a Mermaid flowchart string for a plant loop.
+
+    Nodes render as circles ``(( ))``, equipment as rectangles ``[ ]``,
+    loop boundaries as stadiums ``([ ])``, and manager links as dashed
+    control connections.
+    """
+    raw = plant_loop_raw
+    lines = [
+        "%%{init: {"
+        "'theme': 'base', "
+        "'themeVariables': {"
+        "'background': '#f3f4f6', "
+        "'fontSize': '11px', "
+        "'fontFamily': 'Segoe UI, Arial, sans-serif', "
+        "'primaryTextColor': '#111111', "
+        "'lineColor': '#374151', "
+        "'primaryColor': '#ffffff', "
+        "'primaryBorderColor': '#4b5563', "
+        "'clusterBkg': '#f6f8fb', "
+        "'clusterBorder': '#b8c2cc', "
+        "'edgeLabelBackground': '#ffffff'"
+        "}, "
+        "'flowchart': {"
+        "'nodeSpacing': 26, "
+        "'rankSpacing': 38, "
+        "'curve': 'basis', "
+        "'padding': 10"
+        "}, "
+        "'themeCSS': '"
+        ".cluster rect { rx: 4px; stroke-width: 1.2px; } "
+        ".cluster-label text { font-weight: 600; fill: #111827; } "
+        ".nodeLabel { line-height: 1.25; } "
+        ".edgePath .path { stroke-linecap: round; stroke-linejoin: round; }"
+        "'"
+        "}"
+        "}}%%",
+        "graph LR",
+        "    classDef node fill:#e1e5ea,stroke:#111827,stroke-width:1.1px,color:#111827;",
+        "    classDef equipment fill:#ffffff,stroke:#4b5563,stroke-width:1.1px,color:#111827;",
+        "    classDef boundary fill:#eef1f5,stroke:#111827,stroke-width:1.1px,color:#111827;",
+        "    linkStyle default stroke:#374151,stroke-width:1.35px;",
+    ]
+
+    def _label(obj):
+        if _is_node(obj):
+            return _safe(obj.nameString().strip())
+        tl = _type_label(obj)
+        if show_names:
+            nm = obj.nameString().strip()
+            if nm and nm != tl:
+                return _safe(f"{tl}<br/>{nm}")
+        return _safe(tl)
+
+    def _side_components(components):
+        rendered = []
+        for comp in components:
+            if _is_mixer_splitter(comp):
+                continue
+            nid = _node_id(comp)
+            lbl = _label(comp)
+            if _is_node(comp):
+                lines.append(f'        {nid}(("{lbl}"))')
+                lines.append(f"        class {nid} node")
+            else:
+                lines.append(f'        {nid}["{lbl}"]')
+                lines.append(f"        class {nid} equipment")
+            rendered.append(nid)
+        return rendered
+
+    # Supply side
+    lines.append('    subgraph SUPPLY ["Supply Side"]')
+    lines.append("        direction LR")
+    lines.append('        SI(["Supply Inlet"])')
+    lines.append("        class SI boundary")
+    supply_ids = _side_components(list(raw.supplyComponents()))
+    lines.append('        SO(["Supply Outlet"])')
+    lines.append("        class SO boundary")
+    for a, b in zip(["SI"] + supply_ids + ["SO"], supply_ids + ["SO"]):
+        lines.append(f"        {a} --> {b}")
+    lines.append("    end")
+
+    managers: list[tuple[str, str]] = []
+    try:
+        for spm in raw.loopTemperatureSetpointNode().setpointManagers():
+            managers.append((_node_id(spm), _label(spm)))
+    except (AttributeError, Exception):
+        pass
+    try:
+        for manager in raw.availabilityManagers():
+            managers.append((_node_id(manager), _label(manager)))
+    except (AttributeError, Exception):
+        pass
+
+    if managers:
+        lines.append('    subgraph MGRS ["Managers"]')
+        lines.append("        direction LR")
+        for nid, lbl in managers:
+            lines.append(f'        {nid}["{lbl}"]')
+            lines.append(f"        class {nid} equipment")
+        lines.append("    end")
+
+    # Demand side
+    lines.append('    subgraph DEMAND ["Demand Side"]')
+    lines.append("        direction LR")
+    lines.append('        DI(["Demand Inlet"])')
+    lines.append("        class DI boundary")
+    demand_ids = _side_components(list(raw.demandComponents()))
+    lines.append('        DO(["Demand Outlet"])')
+    lines.append("        class DO boundary")
+    for a, b in zip(["DI"] + demand_ids + ["DO"], demand_ids + ["DO"]):
+        lines.append(f"        {a} --> {b}")
+    lines.append("    end")
+
+    lines.append("    SO --> DI")
+    lines.append("    DO -. return .-> SI")
     if managers:
         lines.append("    MGRS -.-> SO")
 

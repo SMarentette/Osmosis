@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 from .model import Model
+from .schedule_constant import ScheduleConstant
 from .schedule_ruleset import ScheduleRuleset
 
 HourWindow = tuple[int, int]
@@ -46,6 +47,42 @@ def create_daily_schedule(
 
     if cursor < 24:
         day_schedule.add_value(24, 0, 0.0)
+
+    return schedule
+
+
+def create_constant_schedule(
+    model: Model,
+    name: str,
+    value: float,
+    *,
+    unit_type: str | None = None,
+    lower_limit_value: float | None = None,
+    upper_limit_value: float | None = None,
+    numeric_type: str = "Continuous",
+) -> ScheduleConstant:
+    """Create a constant schedule, optionally with schedule type limits.
+
+    Use ``unit_type="Temperature"`` for schedules passed to
+    ``SetpointManagerScheduled``.
+    """
+    schedule = model.schedule_constant.create(name=name)
+    schedule.value = value
+
+    if any(
+        item is not None
+        for item in (unit_type, lower_limit_value, upper_limit_value, numeric_type)
+    ):
+        limits = model.schedule_type_limits.create(name=f"{name} Type Limits")
+        if lower_limit_value is not None:
+            limits.lower_limit_value = lower_limit_value
+        if upper_limit_value is not None:
+            limits.upper_limit_value = upper_limit_value
+        if numeric_type is not None:
+            limits.numeric_type = numeric_type
+        if unit_type is not None:
+            limits.unit_type = unit_type
+        schedule.schedule_type_limits = limits
 
     return schedule
 

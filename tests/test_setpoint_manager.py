@@ -47,6 +47,36 @@ def test_model_can_filter_outdoor_air_reset_setpoint_managers():
     assert type(resets[0]).__name__ == "SetpointManagerOutdoorAirReset"
 
 
+def test_scheduled_setpoint_manager_create_accepts_constant_value():
+    model = osmo.Model.new()
+
+    manager = model.setpoint_manager_scheduled.create(
+        "HW Setpoint Manager",
+        value=60.0,
+    )
+
+    assert type(manager).__name__ == "SetpointManagerScheduled"
+    assert manager.name == "HW Setpoint Manager"
+    assert manager.raw.schedule().nameString() == "HW Setpoint Manager Schedule"
+    assert manager.raw.schedule().to_ScheduleConstant().get().value() == 60.0
+
+
+def test_scheduled_setpoint_manager_create_accepts_schedule():
+    model = osmo.Model.new()
+    schedule = model.create_constant_schedule(
+        "HW Setpoint",
+        60.0,
+        unit_type="Temperature",
+    )
+
+    manager = model.setpoint_manager_scheduled.create(
+        "HW Setpoint Manager",
+        schedule=schedule,
+    )
+
+    assert manager.raw.schedule().handle() == schedule.raw.handle()
+
+
 def test_outdoor_air_reset_collection_is_accessible():
     """Collection access works without a static type map."""
     model = osmo.Model.new()

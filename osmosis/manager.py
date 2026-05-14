@@ -35,7 +35,8 @@ class ComponentManager(Generic[T]):
 
         Raises AttributeError if the SDK object lacks a matching setter.
         """
-        raw = self._create_raw()
+        kwargs = dict(kwargs)
+        raw = self._create_raw(name=name, kwargs=kwargs)
 
         try:
             if name is not None:
@@ -76,7 +77,11 @@ class ComponentManager(Generic[T]):
     def __repr__(self) -> str:
         return f"<ComponentManager [{self._os_cls.__name__}]>"
 
-    def _create_raw(self):
+    def _create_raw(self, name: str | None = None, kwargs: dict | None = None):
+        custom_create = getattr(self._wrapper_cls, "_create_raw_for_manager", None)
+        if custom_create is not None:
+            return custom_create(self._raw_model, name, kwargs if kwargs is not None else {})
+
         try:
             return self._os_cls(self._raw_model)
         except TypeError as original_error:

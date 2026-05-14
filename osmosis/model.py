@@ -91,6 +91,29 @@ class Model(OsmObject):
 
         return create_daily_schedule(self, name, hours)
 
+    def create_constant_schedule(
+        self,
+        name: str,
+        value: float,
+        *,
+        unit_type: str | None = None,
+        lower_limit_value: float | None = None,
+        upper_limit_value: float | None = None,
+        numeric_type: str = "Continuous",
+    ):
+        """Create a constant schedule with optional schedule type limits."""
+        from .schedules import create_constant_schedule
+
+        return create_constant_schedule(
+            self,
+            name,
+            value,
+            unit_type=unit_type,
+            lower_limit_value=lower_limit_value,
+            upper_limit_value=upper_limit_value,
+            numeric_type=numeric_type,
+        )
+
     def add_people(
         self,
         definition: PeopleDefinition,
@@ -132,6 +155,11 @@ class Model(OsmObject):
     def air_loops(self) -> list[OsmObject]:
         """Get all air loops in the model."""
         return [wrap(air_loop) for air_loop in self._os_obj.getAirLoopHVACs()]
+
+    @property
+    def plant_loops(self) -> list[OsmObject]:
+        """Get all plant loops in the model."""
+        return [wrap(plant_loop) for plant_loop in self._os_obj.getPlantLoops()]
 
     @property
     def zone_hvacs(self) -> list[OsmObject]:
