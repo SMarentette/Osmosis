@@ -12,7 +12,18 @@ _registry: dict[str, type] = {}
 # sdk_name index, populated by @register_custom_wrapper
 _snake_registry: dict[str, str] = {}
 
-_PASCAL_ACRONYMS = {"dx", "hvac", "vav", "piu", "doas", "eer", "iplv", "cop", "erv"}
+_PASCAL_ACRONYMS = {
+    "cop",
+    "doas",
+    "dx",
+    "eer",
+    "eir",
+    "erv",
+    "hvac",
+    "iplv",
+    "piu",
+    "vav",
+}
 
 
 def _to_snake(name: str) -> str:

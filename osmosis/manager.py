@@ -10,7 +10,8 @@ if TYPE_CHECKING:
 
 T = TypeVar("T", bound="OsmObject")
 
-_ACRONYMS = {"Cop", "Dx", "Hvac", "Vav", "Doas", "Eer", "Iplv"}
+_ACRONYMS = {"Cop", "Dx", "Hvac", "Vav", "Doas", "Eer", "Eir", "Iplv"}
+_CONNECTOR_WORDS = {"and", "at", "by", "for", "from", "in", "of", "per", "to"}
 
 
 class ComponentManager(Generic[T]):
@@ -43,15 +44,17 @@ class ComponentManager(Generic[T]):
                 raw.setName(name)
 
             for key, val in kwargs.items():
-                setter = _snake_to_setter(key)
-                autosizer = _snake_to_autosizer(key)
-                if _is_autosize_value(val) and hasattr(raw, autosizer):
+                setters = _snake_to_setter_candidates(key)
+                autosizers = _snake_to_autosizer_candidates(key)
+                autosizer = _first_existing(raw, autosizers)
+                if _is_autosize_value(val) and autosizer is not None:
                     getattr(raw, autosizer)()
                     continue
-                if not hasattr(raw, setter):
+                setter = _first_existing(raw, setters)
+                if setter is None:
                     raise AttributeError(
-                        f"{self._os_cls.__name__} has no setter '{setter}' "
-                        f"(derived from kwarg '{key}'). "
+                        f"{self._os_cls.__name__} has no setter for kwarg '{key}' "
+                        f"(tried {', '.join(setters)}). "
                         f"Check the OpenStudio SDK docs for the correct method name."
                     )
                 getattr(raw, setter)(val)
@@ -99,16 +102,61 @@ class ComponentManager(Generic[T]):
 def _snake_to_setter(snake: str) -> str:
     """Convert snake_case kwarg to SDK setter name,
     uppercasing known acronyms."""
-    words = [w.upper() if w.capitalize() in _ACRONYMS else w.capitalize()
-             for w in snake.split("_")]
-    return "set" + "".join(words)
+    return _snake_to_setter_candidates(snake)[0]
+
+
+def _snake_to_setter_candidates(snake: str) -> list[str]:
+    """Return likely SDK setter names for a snake_case kwarg.
+
+    OpenStudio's generated method names sometimes leave connector words
+    lowercase inside otherwise PascalCase names, such as
+    setSetpointatOutdoorLowTemperature or setNumberofPeopleSchedule.
+    """
+    return ["set" + candidate for candidate in _snake_to_pascal_candidates(snake)]
 
 
 def _snake_to_autosizer(snake: str) -> str:
     """Convert snake_case kwarg to SDK autosize method name."""
-    setter = _snake_to_setter(snake)
-    return "autosize" + setter.removeprefix("set")
+    return _snake_to_autosizer_candidates(snake)[0]
+
+
+def _snake_to_autosizer_candidates(snake: str) -> list[str]:
+    """Return likely SDK autosize method names for a snake_case kwarg."""
+    return ["autosize" + candidate for candidate in _snake_to_pascal_candidates(snake)]
 
 
 def _is_autosize_value(value) -> bool:
     return isinstance(value, str) and value.lower() == "autosize"
+
+
+def _first_existing(obj, names: list[str]) -> str | None:
+    for name in names:
+        if hasattr(obj, name):
+            return name
+    return None
+
+
+def _snake_to_pascal_candidates(snake: str) -> list[str]:
+    parts = snake.split("_")
+    candidates = [_pascalize(parts, lowercase_connectors=False)]
+
+    if any(part in _CONNECTOR_WORDS for part in parts[1:]):
+        connector_candidate = _pascalize(parts, lowercase_connectors=True)
+        if connector_candidate not in candidates:
+            candidates.append(connector_candidate)
+
+    return candidates
+
+
+def _pascalize(parts: list[str], lowercase_connectors: bool) -> str:
+    return "".join(
+        part
+        if lowercase_connectors and index > 0 and part in _CONNECTOR_WORDS
+        else _pascal_word(part)
+        for index, part in enumerate(parts)
+    )
+
+
+def _pascal_word(word: str) -> str:
+    capitalized = word.capitalize()
+    return word.upper() if capitalized in _ACRONYMS else capitalized

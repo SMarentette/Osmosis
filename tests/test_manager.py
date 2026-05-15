@@ -1,4 +1,21 @@
 import osmosis as osmo
+from osmosis.manager import ComponentManager
+
+
+class FakeWrapper:
+    def __init__(self, raw):
+        self.raw = raw
+
+
+class FakeConnectorSetter:
+    def __init__(self, raw_model):
+        self.raw_model = raw_model
+
+    def setNumberofPeopleSchedule(self, value):
+        self.number_of_people_schedule = value
+
+    def setAllOutdoorAirinCooling(self, value):
+        self.all_outdoor_air_in_cooling = value
 
 
 def test_component_manager_create_supports_autosize_kwargs():
@@ -39,3 +56,49 @@ def test_component_manager_create_uses_always_on_schedule_constructor_fallback()
         "OS:AirTerminal:SingleDuct:VAV:NoReheat"
     )
     assert terminal.raw.availabilitySchedule().nameString() == "Always On Discrete"
+
+
+def test_component_manager_create_supports_lowercase_connector_setters():
+    model = osmo.Model.new()
+
+    manager = model.setpoint_manager_outdoor_air_reset.create(
+        name="HW Reset",
+        setpoint_at_outdoor_low_temperature=60.0,
+        setpoint_at_outdoor_high_temperature=30.0,
+        outdoor_low_temperature=-20.0,
+        outdoor_high_temperature=10.0,
+    )
+
+    assert manager.raw.setpointatOutdoorLowTemperature() == 60.0
+    assert manager.raw.setpointatOutdoorHighTemperature() == 30.0
+    assert manager.raw.outdoorLowTemperature() == -20.0
+    assert manager.raw.outdoorHighTemperature() == 10.0
+
+
+def test_component_manager_create_tries_connector_words_generically():
+    manager = ComponentManager(object(), FakeConnectorSetter, FakeWrapper)
+
+    wrapped = manager.create(
+        number_of_people_schedule="People",
+        all_outdoor_air_in_cooling=True,
+    )
+
+    assert wrapped.raw.number_of_people_schedule == "People"
+    assert wrapped.raw.all_outdoor_air_in_cooling is True
+
+
+def test_component_manager_resolves_eir_acronym_type_names():
+    model = osmo.Model.new()
+
+    chiller = model.chiller_electric_eir.create(
+        name="Chiller 1",
+        reference_cop=3.0,
+        reference_capacity="autosize",
+        reference_leaving_chilled_water_temperature=6.0,
+        reference_entering_condenser_fluid_temperature=35.0,
+    )
+
+    assert type(chiller.raw).__name__ == "ChillerElectricEIR"
+    assert chiller.name == "Chiller 1"
+    assert chiller.raw.referenceCOP() == 3.0
+    assert chiller.raw.isReferenceCapacityAutosized()

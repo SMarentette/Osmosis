@@ -60,6 +60,18 @@ class PlantLoop(OsmObject):
                 )
         return self
 
+    def add_pump(self, *pumps) -> "PlantLoop":
+        """Add pumps to the supply inlet node of this plant loop."""
+        raw_node = self._os_obj.supplyInletNode()
+        for pump in pumps:
+            raw = OsmObject.unwrap(pump)
+            if not raw.addToNode(raw_node):
+                raise ValueError(
+                    f"OpenStudio rejected adding {_component_label(raw)} "
+                    "to the plant loop supply inlet node."
+                )
+        return self
+
     def add_manager(self, *managers, node=None) -> "PlantLoop":
         """Add setpoint managers to the loop temperature setpoint node.
 

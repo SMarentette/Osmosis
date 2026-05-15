@@ -207,6 +207,29 @@ class AirLoopHVAC(OsmObject):
                 return _cast(comp, "AirLoopHVACOutdoorAirSystem")
         return None
 
+    def add_manager(self, *managers, node=None) -> "AirLoopHVAC":
+        """Add setpoint managers to the supply outlet node.
+
+        Pass ``node=...`` to target a different OpenStudio node.
+        """
+        raw_node = (
+            OsmObject.unwrap(node)
+            if node is not None
+            else self._os_obj.supplyOutletNode()
+        )
+        for manager in managers:
+            raw = OsmObject.unwrap(manager)
+            if not raw.addToNode(raw_node):
+                from .mermaid import _idd_type
+                name = raw.nameString().strip()
+                idd = _idd_type(raw)
+                label = f"{idd} '{name}'" if name else idd
+                raise ValueError(
+                    f"OpenStudio rejected adding {label} "
+                    "to the air loop manager node."
+                )
+        return self
+
     @property
     def setpoint_managers(self) -> list[OsmObject]:
         """Get setpoint managers assigned to the supply outlet node."""

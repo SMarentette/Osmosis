@@ -255,7 +255,7 @@ class OsmObject:
             setpoint_at_x => setpointatX
         """
         parts = snake_str.split('_')
-        connector_words = {"at", "for"}
+        connector_words = {"at", "for", "of", "to"}
         return parts[0] + ''.join(
             word if word in connector_words else word.capitalize()
             for word in parts[1:]
@@ -266,7 +266,7 @@ class OsmObject:
         candidates = [OsmObject._snake_to_camel(snake_str)]
         if "_in_" in snake_str:
             parts = snake_str.split("_")
-            connector_words = {"at", "for", "in"}
+            connector_words = {"at", "for", "in", "of", "to"}
             candidate = parts[0] + ''.join(
                 word if word in connector_words else word.capitalize()
                 for word in parts[1:]

@@ -106,6 +106,31 @@ def test_add_branch_accepts_osmosis_terminal_and_custom_priority():
     )
 
 
+def test_vav_reheat_terminal_create_defaults_reheat_coil_and_attaches_to_loop():
+    model = osmo.Model.new()
+    air_loop = model.air_loop.create(name="Loop")
+    plant_loop = model.plant_loop.create(name="Heating Loop")
+    zone = model.thermal_zone.create(name="Zone 1")
+
+    terminal = model.air_terminal_single_duct_vav_reheat.create(
+        name="Zone 1 Lab Air Terminal"
+    )
+    plant_loop.add_demand(terminal.reheat_coil)
+    air_loop.add_branch(zone, terminal=terminal)
+
+    assert type(terminal).__name__ == "AirTerminalSingleDuctVAVReheat"
+    assert terminal.raw.availabilitySchedule().nameString() == "Always On Discrete"
+    assert terminal.reheat_coil.name == "Zone 1 Lab Air Terminal Reheat Coil"
+    assert terminal.reheat_coil.raw.iddObjectType().valueDescription() == (
+        "OS:Coil:Heating:Water"
+    )
+    assert zone.raw.equipmentInCoolingOrder()[0].handle() == terminal.raw.handle()
+    assert any(
+        component.handle == terminal.reheat_coil.handle
+        for component in plant_loop.demand_components
+    )
+
+
 def test_air_loop_exposes_supply_fans_and_coils():
     model = osmo.Model.new()
     raw_air_loop = openstudio.model.AirLoopHVAC(model.raw)
