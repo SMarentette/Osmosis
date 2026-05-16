@@ -12,6 +12,7 @@ from .manager import ComponentManager
 from .additional_properties import AdditionalProperties
 from .air_loop import AirLoopHVAC
 from .air_loop_hvac_unitary_system import AirLoopHVACUnitarySystem
+from .air_terminal import AirTerminalSingleDuctVAVReheat
 from .building_story import BuildingStory
 from .coil_cooling_dx_single_speed import CoilCoolingDXSingleSpeed
 from .coil_heating_dx_single_speed import CoilHeatingDXSingleSpeed
@@ -36,6 +37,8 @@ from .setpoint_manager_single_zone_reheat import SetpointManagerSingleZoneReheat
 from .space import Space
 from .space_type import SpaceType
 from .thermal_zone import ThermalZone
+from .water_coil import CoilCoolingWater
+from .water_coil import CoilHeatingWater
 from .zone_hvac import ZoneHVACUnitHeater
 class Model:
     @classmethod
@@ -119,7 +122,7 @@ class Model:
     @property
     def air_terminal_single_duct_vav_no_reheat(self) -> ComponentManager[OsmObject]: ...
     @property
-    def air_terminal_single_duct_vav_reheat(self) -> ComponentManager[OsmObject]: ...
+    def air_terminal_single_duct_vav_reheat(self) -> ComponentManager[AirTerminalSingleDuctVAVReheat]: ...
     @property
     def air_to_air_component(self) -> ComponentManager[OsmObject]: ...
     @property
@@ -271,7 +274,7 @@ class Model:
     @property
     def coil_cooling_low_temp_radiant_var_flow(self) -> ComponentManager[OsmObject]: ...
     @property
-    def coil_cooling_water(self) -> ComponentManager[OsmObject]: ...
+    def coil_cooling_water(self) -> ComponentManager[CoilCoolingWater]: ...
     @property
     def coil_cooling_water_panel_radiant(self) -> ComponentManager[OsmObject]: ...
     @property
@@ -315,7 +318,7 @@ class Model:
     @property
     def coil_heating_low_temp_radiant_var_flow(self) -> ComponentManager[OsmObject]: ...
     @property
-    def coil_heating_water(self) -> ComponentManager[OsmObject]: ...
+    def coil_heating_water(self) -> ComponentManager[CoilHeatingWater]: ...
     @property
     def coil_heating_water_baseboard(self) -> ComponentManager[OsmObject]: ...
     @property

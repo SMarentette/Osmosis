@@ -51,6 +51,46 @@ class OsmObject:
         return self
 
     @property
+    def inlet_node(self) -> "OsmObject | None":
+        """Wrapped inlet node, or None when this object has not been connected."""
+        return self._first_node(
+            "inletModelObject",
+            "airInletModelObject",
+            "waterInletModelObject",
+            "inletNode",
+        )
+
+    @property
+    def outlet_node(self) -> "OsmObject | None":
+        """Wrapped outlet node, or None when this object has not been connected."""
+        return self._first_node(
+            "outletModelObject",
+            "airOutletModelObject",
+            "waterOutletModelObject",
+            "outletNode",
+        )
+
+    @property
+    def air_inlet_node(self) -> "OsmObject | None":
+        """Wrapped air inlet node, or None when no air inlet node exists yet."""
+        return self._first_node("airInletModelObject")
+
+    @property
+    def air_outlet_node(self) -> "OsmObject | None":
+        """Wrapped air outlet node, or None when no air outlet node exists yet."""
+        return self._first_node("airOutletModelObject")
+
+    @property
+    def water_inlet_node(self) -> "OsmObject | None":
+        """Wrapped water inlet node, or None when no water inlet node exists yet."""
+        return self._first_node("waterInletModelObject")
+
+    @property
+    def water_outlet_node(self) -> "OsmObject | None":
+        """Wrapped water outlet node, or None when no water outlet node exists yet."""
+        return self._first_node("waterOutletModelObject")
+
+    @property
     def name(self) -> str | None:
         """Typed access to an object's name when the SDK object exposes one."""
         if not hasattr(self._os_obj, "name"):
@@ -202,14 +242,10 @@ class OsmObject:
 
         Returns None if not initialized, otherwise the unwrapped value.
         """
-        if hasattr(result, "is_initialized"):
-            try:
-                if result.is_initialized():
-                    result = result.get()
-                else:
-                    return None
-            except Exception:
-                return result
+        optional_result = OsmObject._optional_value(result)
+        if optional_result is None:
+            return None
+        result = optional_result
         return OsmObject._wrap_sdk_result(result, attr_name)
 
     @staticmethod
@@ -238,6 +274,66 @@ class OsmObject:
             return wrap(result)
 
         return result
+
+    def _first_node(self, *method_names: str) -> "OsmObject | None":
+        for method_name in method_names:
+            method = getattr(self._os_obj, method_name, None)
+            if method is None:
+                continue
+
+            try:
+                node = self._node_from_model_object(method())
+            except Exception:
+                continue
+
+            if node is not None:
+                return node
+
+        return None
+
+    @staticmethod
+    def _node_from_model_object(model_object: Any) -> "OsmObject | None":
+        model_object = OsmObject._optional_value(model_object)
+        if model_object is None:
+            return None
+
+        to_node = getattr(model_object, "to_Node", None)
+        if to_node is not None:
+            try:
+                node = OsmObject._optional_value(to_node())
+            except Exception:
+                return None
+            if node is None:
+                return None
+            return OsmObject._wrap_sdk_result(node)
+
+        if type(model_object).__name__ == "Node":
+            return OsmObject._wrap_sdk_result(model_object)
+
+        return None
+
+    @staticmethod
+    def _optional_value(value: Any) -> Any:
+        if value is None:
+            return None
+
+        if hasattr(value, "empty"):
+            try:
+                if value.empty():
+                    return None
+                return value.get()
+            except Exception:
+                return value
+
+        if hasattr(value, "is_initialized"):
+            try:
+                if value.is_initialized():
+                    return value.get()
+                return None
+            except Exception:
+                return value
+
+        return value
 
     @staticmethod
     def _is_plural_attribute(name: str) -> bool:

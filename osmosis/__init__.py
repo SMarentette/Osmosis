@@ -38,6 +38,7 @@ from .fan_system_model import FanSystemModel
 from .coil_cooling_dx_single_speed import CoilCoolingDXSingleSpeed
 from .coil_heating_dx_single_speed import CoilHeatingDXSingleSpeed
 from .coil_heating_electric import CoilHeatingElectric
+from .water_coil import CoilCoolingWater, CoilHeatingWater
 from .air_loop_hvac_unitary_system import AirLoopHVACUnitarySystem
 from .schedules import create_daily_schedule
 
@@ -79,6 +80,8 @@ __all__ = [
     "CoilCoolingDXSingleSpeed",
     "CoilHeatingDXSingleSpeed",
     "CoilHeatingElectric",
+    "CoilCoolingWater",
+    "CoilHeatingWater",
     "AirLoopHVACUnitarySystem",
     "create_daily_schedule",
     "wrap",
