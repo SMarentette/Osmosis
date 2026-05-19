@@ -44,6 +44,36 @@ def test_component_manager_create_keeps_numeric_setter_kwargs():
     assert controller.raw.maximumOutdoorAirFlowRate().get() == 1.5
 
 
+def test_controller_outdoor_air_can_configure_fixed_minimum_oa_and_dcv():
+    model = osmo.Model.new()
+
+    controller = model.controller_outdoor_air.create(
+        name="OA Controller",
+        economizer_minimum_limit_dry_bulb_temperature=10.0,
+        economizer_maximum_limit_dry_bulb_temperature=20.0,
+        economizer_maximum_limit_enthalpy=30000.0,
+    )
+    mech_vent = model.controller_mechanical_ventilation.create(name="MV Controller")
+    controller.raw.setControllerMechanicalVentilation(mech_vent.raw)
+
+    returned = controller.configure_fixed_minimum_outdoor_air()
+    controller.set_demand_controlled_ventilation(True)
+
+    assert returned is controller
+    assert controller.minimum_limit_type == "FixedMinimum"
+    assert not controller.raw.getEconomizerMinimumLimitDryBulbTemperature().is_initialized()
+    assert not controller.raw.getEconomizerMaximumLimitDryBulbTemperature().is_initialized()
+    assert not controller.raw.getEconomizerMaximumLimitEnthalpy().is_initialized()
+    assert (
+        controller.raw.minimumFractionofOutdoorAirSchedule().get().handle()
+        == model.raw.alwaysOnDiscreteSchedule().handle()
+    )
+    assert (
+        controller.raw.controllerMechanicalVentilation().demandControlledVentilation()
+        is True
+    )
+
+
 def test_component_manager_create_uses_always_on_schedule_constructor_fallback():
     model = osmo.Model.new()
 

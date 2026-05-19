@@ -17,6 +17,7 @@ from .building_story import BuildingStory
 from .coil_cooling_dx_single_speed import CoilCoolingDXSingleSpeed
 from .coil_heating_dx_single_speed import CoilHeatingDXSingleSpeed
 from .coil_heating_electric import CoilHeatingElectric
+from .controller_outdoor_air import ControllerOutdoorAir
 from .default_schedule_set import DefaultScheduleSet
 from .electric_equipment import ElectricEquipment
 from .electric_equipment_definition import ElectricEquipmentDefinition
@@ -368,7 +369,7 @@ class Model:
     @property
     def controller_mechanical_ventilation(self) -> ComponentManager[OsmObject]: ...
     @property
-    def controller_outdoor_air(self) -> ComponentManager[OsmObject]: ...
+    def controller_outdoor_air(self) -> ComponentManager[ControllerOutdoorAir]: ...
     @property
     def controller_water_coil(self) -> ComponentManager[OsmObject]: ...
     @property
