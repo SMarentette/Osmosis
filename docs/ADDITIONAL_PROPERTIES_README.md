@@ -107,3 +107,25 @@ string_value = props._os_obj.getFeatureAsString('custom_field')
 double_value = props._os_obj.getFeatureAsDouble('measurement')
 bool_value = props._os_obj.getFeatureAsBoolean('flag')
 ```
+### Model Grouping with Addition Properties
+
+
+You can use additional space properties to group zones in your model for reporting, HVAC assignment, or other custom logic. This is especially useful when you want to organize zones by a user-defined property, such as the type of HVAC system serving each space.
+
+Below is an example of how to display available additional space properties and group zones by a specific property (e.g., `hvac_system`).
+
+```python
+# Show the user the options as a dictionary
+model.additional_space_properties()
+
+# Group zones by the "hvac_system" additional space property
+# Note: if a zone has multiple spaces, the first space is used to determine the grouping
+group_zones = model.group_zones_by_additional_space_property("hvac_system")
+
+print(group_zones)  # Prints a dictionary with the hvac_system as the key and a list of zones as the value
+
+vestibule_zones = group_zones.get("vestibule", [])  # Returns a list of zones in the vestibule group
+print(vestibule_zones)  # Prints the list of zones in the vestibule group
+```
+
+This approach allows you to  organize and access zones based on any custom property you define at the space level

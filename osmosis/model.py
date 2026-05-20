@@ -177,6 +177,78 @@ class Model(OsmObject):
         """Get all DefaultScheduleSets in the model."""
         return [DefaultScheduleSet(item) for item in self._os_obj.getDefaultScheduleSets()]
 
+    @staticmethod
+    def _normalize_additional_property_name(name: str) -> str:
+        import re
+
+        return (
+            re.sub(r"[^A-Za-z0-9]+", "_", name.strip())
+            .strip("_")
+            .lower()
+        )
+
+    def additional_space_properties(self) -> dict[str, list[Any]]:
+        """Return available additional Space properties and their values.
+
+        Returns:
+            A dictionary keyed by additional property name. Each value is a
+            sorted list of distinct values found on model spaces.
+        """
+        properties: dict[str, set[Any]] = {}
+
+        for space in self.spaces:
+            props = space.additional_properties
+            for feature_name in props.feature_names:
+                try:
+                    value = props.get(feature_name)
+                except Exception:
+                    continue
+
+                properties.setdefault(feature_name, set()).add(value)
+
+        return {
+            key: sorted(values, key=lambda value: str(value))
+            for key, values in sorted(properties.items())
+        }
+
+    def group_zones_by_additional_space_property(
+        self,
+        property_name: str,
+    ) -> AdditionalSpacePropertyZoneGroups:
+        """Group unique thermal zones by a Space additional property value.
+
+        If multiple spaces on the same ThermalZone have the same property
+        value, the zone appears only once for that value.
+        """
+        normalized_property_name = self._normalize_additional_property_name(
+            property_name
+        )
+        groups: AdditionalSpacePropertyZoneGroups = (
+            AdditionalSpacePropertyZoneGroups()
+        )
+        seen_zone_ids: set[str] = set()
+
+        for space in self.spaces:
+            props = space.additional_properties
+            value = props.get(normalized_property_name)
+            if value is None:
+                value = props.get(property_name)
+            if value is None:
+                continue
+
+            zone = space.thermal_zone
+            if zone is None:
+                continue
+
+            zone_id = zone.handle or str(zone.name) or repr(zone.raw)
+            if zone_id in seen_zone_ids:
+                continue
+
+            seen_zone_ids.add(zone_id)
+            groups.setdefault(value, []).append(zone)
+
+        return groups
+
     def __getattr__(self, name: str) -> Any:
         """
         Enable snake_case access to camelCase attributes.
@@ -233,3 +305,24 @@ class Model(OsmObject):
             )
         except Exception:
             return "Model()"
+class AdditionalSpacePropertyZoneGroups(dict):
+    """Dictionary of additional-property values to unique thermal zones.
+
+    The object behaves like a normal dict and is also callable for notebook
+    convenience:
+
+        grouped = model.group_zones_by_additional_space_property("hvac_system")
+        vestibule_zones = grouped("vestibule")
+    """
+
+    def __call__(self, value: Any) -> list[OsmObject]:
+        if value in self:
+            return self[value]
+
+        if isinstance(value, str):
+            normalized_value = value.casefold()
+            for key, zones in self.items():
+                if isinstance(key, str) and key.casefold() == normalized_value:
+                    return zones
+
+        return []
